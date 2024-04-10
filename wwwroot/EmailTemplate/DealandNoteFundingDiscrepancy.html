@@ -1,0 +1,181 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+    <style>
+        table #trHeader td {
+            font-weight: bold;
+            border-collapse: collapse;
+            text-align: left !important;
+            padding-left: 5px !important;
+            padding-right: 5px !important;
+        }
+
+        table {
+            width: 100%;
+        }
+
+        table, th, td {
+            border: 2px solid black;
+            border-collapse: collapse;
+        }
+
+        .new td {
+            border: 0px;
+        }
+
+        .tablecss {
+            width: 100%;
+        }
+
+        #Dealfundingdiscrepancy td {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+
+    <table class="new" style="background-color:#FFF;border:0px;">
+
+        <tr>
+        <tr bgcolor="#FFFFFF">
+            <td>
+                Hi,
+                <br />
+                <br />
+                Please refer below grid for the discrepancies found today:
+                <br />
+                <br />
+                <!--<p style="padding:0px; margin:0px 0px 0px 0px;"><strong style="color:#333333; font-size:14px;  font-family:Arial, Helvetica">Admin,</strong></p>-->
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <!--<p style="font-weight: bold;"><strong>Summary:</strong></p>-->
+                <strong>Summary:</strong>
+                <table style="width:330px !important;border-collapse: collapse; border-style: hidden;">
+                    <tr>
+                        <td>
+                            {messagesummary}
+                        </td>
+                    </tr>
+                </table>
+
+                <br />
+                <strong>Details:</strong>
+                <br />
+
+                <strong>{discrepancytitle}</strong>
+                <br />
+                {message}
+                <br /> <br />
+
+                <strong>{exitfeetitle}</strong>
+                <br />
+                {message1}
+                <br /> <br />
+
+                <strong>{FFBetweenM61andBackshoptitle}</strong>
+                <br />
+                {message2}
+                <br /> <br />
+
+                <!--<p style="font-weight: bold;"><strong>{CommitmentDiscrepancytitle}</strong></p>
+    {message3}
+    <br />-->
+
+                <strong>{CommitmentDiscrepancyDatatitle}</strong>
+                <br />
+                {message4}
+                <br /> <br />
+
+                <strong>{Eligibledealsautospreadtitle}</strong>
+                <br />
+                {message5}
+                <br /> <br />
+
+                <strong>{EPBetweenM61andBackshoptitle}</strong>
+                <br />
+                {message6}
+                <br /> <br />
+
+                <strong>{NetIOTransactiontitle}</strong>
+                <br />
+                {message7}
+                <br /> <br />
+
+                <strong>{FinancingSource}</strong>
+                <br />
+                {message8}
+                <br /> <br />
+
+                <strong>{InvoiceDiscrepancy}</strong>
+                <br />
+                {message9}
+                <br />
+                <br /> <br />
+
+                <strong>{GetDiscrepancyForWireConfirmed}</strong>
+                <br />
+                {message10}
+                <br />
+                <br /> <br />
+
+                <strong>{GetDiscrepancyForBalanceM61VsBackshop}</strong>
+                <br />
+                {message11}
+                <br />
+                <br /> <br />
+
+
+                <strong>{GetDiscrepancyForAdjCommitmentM61VsBackshop}</strong>
+                <br />
+                {message12}
+                <br />
+                <br /> <br />
+
+                <strong>{GetDiscrepancyForTotalFFVsUnfundedCommitment}</strong>
+                <br />
+                {message13}
+                <br />
+                <br /> <br />
+
+                <strong>{GetDiscrepancyForDuplicatePIK_InBackshop}</strong>
+                <br />
+                {message14}
+                <br />
+                <br /> <br />
+
+                <strong>{GetDiscrepancyForNotesFailedInCalculation}</strong>
+                <br />
+                {message15}
+                <br />
+                <br /> <br />
+
+                Thanks,<br />
+                M61 Support Team
+            </td>
+
+        </tr>
+
+
+    </table>
+    <br />
+    <br />
+    <br />
+    <table style="border: 0px;  margin-left:0px !important; padding-left:0px !important;">
+        <tr>
+            <td style="border:0px; ">
+                <p style="padding:0px; font-size:12px"><strong>Note:</strong> This is a system generated email. Please do not reply to this email.</p>
+                <hr style="padding:0px; font-size:12px" />
+                <p style="padding:0px; font-size:12px">
+                    ACORE Capital Email Notice: This e-mail communication is intended only for the addressee(s) named above and any others who have been specifically authorized to receive it and may contain information that is privileged, confidential or otherwise protected from disclosure. If you are not the intended recipient of this e-mail communication, please do not copy, use or disclose to others the contents of this communication. Please notify the sender that you have received this e-mail in error by replying to this e-mail. Please then delete the e-mail from your system and any copies of it. No confidentiality or privilege is waived or lost by any transmission errors. This communication does not constitute an offer to sell or a solicitation of an offer to purchase any interest in any investment vehicles managed or advised by ACORE Capital. ACORE Capital does not provide tax, accounting, or legal advice to our clients, and all investors are advised to consult with their tax, accounting, or legal advisers regarding any potential investment.
+                </p>
+            </td>
+        </tr>
+
+    </table>
+</body>
+</html>

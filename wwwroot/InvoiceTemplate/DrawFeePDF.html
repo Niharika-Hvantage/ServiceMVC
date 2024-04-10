@@ -1,0 +1,168 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+</head>
+<body>
+    <div style="margin-left:70px;margin-right:70px">
+
+
+        <table width="100%">
+            <tr>
+                <td width="50%"> <img src="wwwroot\InvoiceTemplate\acore_logo_white.png" width="111" height="42" /></td>
+                <td width="50%" align="right">
+                    <p>{currdate} </p><br />
+                    <p>Invoice #: {invoiceno} </p><br />
+                    <p>Invoice Reference Code: {qbdinvoiceno} </p>
+                </td>
+            </tr>
+        </table>
+
+        <br />
+
+        <p>
+            {fullname},
+        </p>
+        <p>
+            {address}
+        </p>
+        <p>
+            {firstname},
+        </p>
+        <p>
+            ACORE Capital is requesting payment of the following Lender Processing Fee.
+        </p>
+        <table width="100%" border="1" cellpadding="0" cellspacing="0">
+            <tr><td height="40">{dealandcomment}</td></tr>
+        </table>
+
+        <br />
+        <table cellspacing="3xp" align="left" width="100%">
+
+            <tr align="left">
+                <td width="30%">
+                    {feeamount}
+                </td>
+                <td width="70%">
+                    Draw Fee - In accordance with Loan Agreement
+                </td>
+            </tr>
+
+        </table>
+        <hr />
+        <table cellspacing="3xp" align="left" width="100%">
+            <tr align="left" style="border-top: 1px solid black;">
+                <td width="30%">
+                    <b> {feeamount}</b>
+                </td>
+                <td width="70%">
+                    <b>  Total amount due and payable immediately.</b>
+                </td>
+            </tr>
+
+        </table>
+        <br />
+        <table cellspacing="3xp" align="left" width="100%">
+            <tr align="left">
+                <td width="30%" style="vertical-align:top;">
+                    <b>Wire/ACH Instructions:</b>
+                </td>
+                <td width="70%">
+                    <b style="color:red">Please reference the Invoice Number when sending a wire or check.</b>
+                </td>
+            </tr>
+        </table>
+
+        <table align="left" width="100%" border="1" cellspacing="0" cellpadding="3">
+
+            <tr align="left">
+                <td width="50%">
+                    Routing Number:
+                </td>
+                <td width="50%">
+                    321081669
+                </td>
+            </tr>
+            <tr align="left">
+                <td width="50%">
+                    Beneficiary Bank:
+                </td>
+                <td width="50%">
+                    First Republic Bank
+                </td>
+            </tr>
+            <tr align="left">
+                <td width="50%">
+                    Beneficiary Bank Address:
+                </td>
+                <td width="50%">
+                    101 Pine Street; San Francisco, CA 94111
+                </td>
+            </tr>
+            <tr align="left">
+                <td width="50%">
+                    <b>Account #:</b>
+                </td>
+                <td width="50%">
+                    <b>80003128733</b>
+                </td>
+            </tr>
+            <tr align="left">
+                <td width="50%">
+                    Account Name:
+                </td>
+                <td width="50%">
+                    ACORE Capital, LP - Operating Account
+                </td>
+            </tr>
+            <tr align="left">
+                <td width="50%">
+                    Reference:
+                </td>
+                <td width="50%">
+                    {wirereference}
+                </td>
+            </tr>
+        </table>
+        <br />
+        <table cellspacing="3xp" align="left" width="100%">
+
+            <tr align="left" border-bottom="1">
+                <td width="50%">
+                    <b>Mailing Instructions:</b>
+                </td>
+                <td width="50%">
+                    <b><u style="color:red"><i>A WIRE IS PREFERABLE</i> </u></b>
+                </td>
+            </tr>
+        </table>
+        <hr />
+        <table align="left" width="100%">
+
+            <tr align="left">
+                <td width="50%">
+                    <b>
+                        ACORE Capital, LP<br />
+                        ATTN: Accounting<br />
+                        1177 Avenue of the Americas<br />
+                        Suite #0200<br />
+                        New York, NY 10036
+                    </b>
+                </td>
+                <td width="50%">
+                    <b> </b>
+                </td>
+            </tr>
+            <tr align="left">
+                <td width="50%">
+                    <b>Please send payment confirmation to:</b>
+                </td>
+                <td width="50%">
+                    AR@acorecapital.com
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

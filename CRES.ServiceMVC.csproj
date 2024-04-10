@@ -1,0 +1,126 @@
+﻿
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+    <NoWin32Manifest>true</NoWin32Manifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="wwwroot\EmailTemplate\DealandNoteFundingDiscrepancy - Copy (2).html" />
+    <Content Remove="wwwroot\EmailTemplate\DealandNoteFundingDiscrepancy - Copy.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\AcoreReports\Aflac ACR Pricing_2020-06-02-03-51-05.CSV" />
+    <None Include="wwwroot\AcoreReports\Aflac ACR_Disclosure_2020-06-02-03-51-12.XLSX" />
+    <None Include="wwwroot\AcoreReports\Aflac TRE Misc_2020-06-02-03-51-27.CSV" />
+    <None Include="wwwroot\AcoreReports\Aflac TRE Positions_2020-06-02-03-51-33.CSV" />
+    <None Include="wwwroot\AcoreReports\~%24Aflac ACR_Disclosure_2020-04-30-03-41-19.XLSX" />
+    <None Include="wwwroot\AcoreReports\~%24Aflac ACR_Disclosure_2020-05-01-06-32-34.XLSX" />
+    <None Include="wwwroot\AcoreReportTemplates\001_Aflac_TRE Misc.csv" />
+    <None Include="wwwroot\AcoreReportTemplates\002_Aflac_TREPositions.csv" />
+    <None Include="wwwroot\AcoreReportTemplates\003_14_Aflac_ACR_PricingME20200131.csv" />
+    <None Include="wwwroot\AcoreReportTemplates\005_16_Aflac_ACR_DisclosureME20200131 - Copy.xlsx" />
+    <None Include="wwwroot\AcoreReportTemplates\005_16_Aflac_ACR_DisclosureME20200131.xlsx" />
+    <None Include="wwwroot\AcoreReportTemplates\Aflac_ACR_410InterestPayment.csv" />
+    <None Include="wwwroot\AcoreReportTemplates\AFlac_TRE365cancel.csv" />
+    <None Include="wwwroot\EmailTemplate\BatchCalculationNotification.html" />
+    <None Include="wwwroot\EmailTemplate\CalculationFailureNotification.html" />
+    <None Include="wwwroot\EmailTemplate\CommentedPostedNotification.html" />
+    <None Include="wwwroot\EmailTemplate\ConsolidatedNotification.html" />
+    <None Include="wwwroot\EmailTemplate\DealandNoteFundingDiscrepancy.html" />
+    <None Include="wwwroot\EmailTemplate\DealFailedToSave.html" />
+    <None Include="wwwroot\EmailTemplate\DealFundingEmail.html" />
+    <None Include="wwwroot\EmailTemplate\DealGenerateFutureFundingFailed.html" />
+    <None Include="wwwroot\EmailTemplate\DelegateUserNotification.html" />
+    <None Include="wwwroot\EmailTemplate\ExportFFBackshopFailEmailNotification.html" />
+    <None Include="wwwroot\EmailTemplate\FinalNotification.html" />
+    <None Include="wwwroot\EmailTemplate\ForgotPasswordActivationLinkNotification.html" />
+    <None Include="wwwroot\EmailTemplate\MultiInvestorNotification.html" />
+    <None Include="wwwroot\EmailTemplate\NewUserNotification.html" />
+    <None Include="wwwroot\EmailTemplate\PeriodicCloseDBExportFailEmailNotification.html" />
+    <None Include="wwwroot\EmailTemplate\PreliminaryNotification.html" />
+    <None Include="wwwroot\EmailTemplate\ResetPasswordActivationLinkNotification.html" />
+    <None Include="wwwroot\EmailTemplate\ResetPasswordNotification.html" />
+    <None Include="wwwroot\EmailTemplate\RevisedNotification.html" />
+    <None Include="wwwroot\EmailTemplate\ServicerNotification.html" />
+    <None Include="wwwroot\EmailTemplate\TaskAssignedNotification.html" />
+    <None Include="wwwroot\EmailTemplate\TaskCreatedNotification.html" />
+    <None Include="wwwroot\EmailTemplate\WorkflowAdditionalGroupNotification.html" />
+    <None Include="wwwroot\EmailTemplate\WorkFlowApprover.html" />
+    <None Include="wwwroot\EmailTemplate\WorkFlowRequestNotification.html" />
+    <None Include="wwwroot\ExcelTemplate\Berkadia File Template.xlsx" />
+    <None Include="wwwroot\ExcelTemplate\Daily Extract File Template.xlsx" />
+    <None Include="wwwroot\ExcelTemplate\M61_Wells_Export.xlsx" />
+    <None Include="wwwroot\ExcelTemplate\Manual Transaction File Template.xlsx" />
+    <None Include="wwwroot\ExcelTemplate\Remittance File Template.xlsx" />
+    <None Include="wwwroot\PDFTemplate\DealFunding.html" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK" Version="2.3.55.2" />
+    <PackageReference Include="Box.V2.Core" Version="3.23.0" />
+    <PackageReference Include="EPPlus" Version="4.5.3.2" />
+    <PackageReference Include="ExcelDataReader" Version="3.4.0" />
+    <PackageReference Include="ExcelDataReader.DataSet" Version="3.4.0" />
+    <PackageReference Include="Ionic.Zip" Version="1.9.1.8" />
+    <PackageReference Include="iTextSharp" Version="5.5.10" />
+    <PackageReference Include="itextsharp.xmlworker" Version="5.5.10" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Core" Version="5.2.7" />
+    <PackageReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.2.6" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Graph" Version="3.15.0" />
+    <PackageReference Include="Microsoft.Graph.Auth" Version="1.0.0-preview.3" />
+    <PackageReference Include="Microsoft.Identity.Client" Version="4.22.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="3.19.8" />
+    <PackageReference Include="Microsoft.PowerBI.Api" Version="3.11.1" />
+    <PackageReference Include="Microsoft.PowerBI.AspNet.Mvc" Version="1.1.11" />
+    <PackageReference Include="Microsoft.PowerBI.Core" Version="1.1.11" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.2.3" />
+    <PackageReference Include="Microsoft.WindowsAzure.ConfigurationManager" Version="3.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
+    <PackageReference Include="WindowsAzure.Storage" Version="6.2.0" />
+  </ItemGroup>
+
+
+  <!--<ItemGroup>
+    <ProjectReference Include="..\CRES.BusinessLogic\CRES.BusinessLogic.csproj" />
+    <ProjectReference Include="..\CRES.DataContract\CRES.DataContract.csproj" />
+    <ProjectReference Include="..\CRES.NoteCalculatorCore\CRES.NoteCalculator.csproj" />
+    <ProjectReference Include="..\CRES.Utilities\CRES.Utilities.csproj" />
+  </ItemGroup>-->
+
+
+  <ItemGroup>
+    <Folder Include="wwwroot\JSONFile\" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <Reference Include="CRES.BusinessLogic">
+      <HintPath>externaldlls\CRES.BusinessLogic.dll</HintPath>
+    </Reference>
+    <Reference Include="CRES.DAL">
+      <HintPath>externaldlls\CRES.DAL.dll</HintPath>
+    </Reference>
+    <Reference Include="CRES.DataContract">
+      <HintPath>externaldlls\CRES.DataContract.dll</HintPath>
+    </Reference>
+    <Reference Include="CRES.NoteCalculator">
+      <HintPath>externaldlls\CRES.NoteCalculator.dll</HintPath>
+    </Reference>
+    <Reference Include="CRES.Utilities">
+      <HintPath>externaldlls\CRES.Utilities.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
+
+</Project>

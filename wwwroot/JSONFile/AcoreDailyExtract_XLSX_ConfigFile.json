@@ -1,0 +1,221 @@
+﻿{
+  "SheetName": "Remit",
+  "LandingTableName": "IO.L_Remittance",
+  "ImportProcedureName": "xyz",
+  "HeaderPosition": 8,  
+  "MappingColumns": [
+    {
+      "SheetColumnName": "Investor No",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "InvestorNo",
+      "IsMandatory": "Y"
+
+    },
+
+    {
+      "SheetColumnName": "Note ID",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "NoteID",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Borrower Name",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "BorrowerName",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Due Date",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "DueDate",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Loan No",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "LoanNo",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "GROUP_NUMBER",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "GROUPNUMBER",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Next Pmt Due",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "NextPmtDue",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Beg Balance",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "BegBalance",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "P&I Due",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "PIDue",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Principal",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "Principal",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Interest",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "Interest",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Interest Rate",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "InterestRate",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Service Fee Rate",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "ServiceFeeRate",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Net Yield",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "NetYield",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Service Fee",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "ServiceFee",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Net Interest",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "NetInterest",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Exit/Extension Fees",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "ExitExtensionFees",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Prepayment / YM Fees",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "PrepaymentYMFees",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Other Fees",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "OtherFees",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Add'l Principal",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "AddlPrincipal",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Fee Payback",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "FeePayback",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Add'l Int",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "AddlInt",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Float Int CR",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "FloatIntCR",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Total Remit",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "TotalRemit",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Principal Adj (Non Cash)",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "PrincipalAdjNonCash",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Ending Balance",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "EndingBalance",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Tran Date",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "TranDate",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Accrual Days",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "AccrualDays",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Int Rate Type",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "IntRateType",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "NOTE_DATE",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "NOTEDATE",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Maturity Date",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "MaturityDate",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Comments",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "Comments",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "DIAL Beginning Balance",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "DIALBeginningBalance",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Current DIAL",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "CurrentDIAL",
+      "IsMandatory": "Y"
+    },
+    {
+      "SheetColumnName": "Ending DIAL Balance",
+      "SheetColumnDataType": "String",
+      "LandingColumnName": "EndingDIALBalance",
+      "IsMandatory": "Y"
+    }
+  ]
+
+}

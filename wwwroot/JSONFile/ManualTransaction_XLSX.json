@@ -1,0 +1,72 @@
+﻿{
+  "SheetName": "Transactions",
+  "LandingTableName": "IO.L_ManualTransaction",
+  "ImportProcedureName": "usp_ImportManualTransIntoTranscationReconciliation",
+  "HeaderPosition": 3,
+  "Check2BlankRow": true,
+  "MappingColumns": [
+    {
+      "SheetColumnName": "Note ID",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "NoteID",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "Y"
+    },
+    {
+      "SheetColumnName": "NoteName",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "NoteName",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Transaction Date",
+      "SheetColumnDataType": "System.DateTime",
+      "LandingColumnName": "TransDate",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Value",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "Value",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "Y"
+    },
+    {
+      "SheetColumnName": "ValueType",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "ValueType",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "Y"
+    },
+    {
+      "SheetColumnName": "Due Date",
+      "SheetColumnDataType": "System.DateTime",
+      "LandingColumnName": "DueDate",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Remit Date",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "RemitDate",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "Y"
+    },
+    {
+      "SheetColumnName": "Capitalized Interest",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "CapitalizedInterest",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Cash Interest",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "CashInterest",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    }
+  ]
+}

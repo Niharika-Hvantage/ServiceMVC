@@ -1,0 +1,3611 @@
+{
+  "engine": "cre",
+  "rules": [
+    {
+      "description": "Attach a rule which should be executed when an account is updated",
+      "type": "attach_rules_to_accounts",
+      "config": {
+        "funding_fundpydn": [
+          {
+            "description": "Get note for fee setup",
+            "context": [
+              {
+                "name": "note",
+                "expression": "@notes[@note_id]"
+              }
+            ]
+          },
+          {
+            "description": "Calculate Exit Fee",
+            "type": "foreach",
+            "condition": "(@amount < 0) & (@if_exists(@note.setup, [@effective_date, 'tables'], ['fee']))",
+            "config": {
+              "foreach_variable_name": "fee",
+              "expression": "[x for x in @note.setup[@effective_date].tables.fee if x.valtype==1]",
+              "rules": [
+                {
+                  "description": "Fee",
+                  "type": "accumulate",
+                  "condition": "pd.Timestamp(@fee.startdt) <= @date <= pd.Timestamp(@fee.enddt)",
+                  "context": [
+                    {
+                      "name": "fee_prefix",
+                      "expression": "@fee.type"
+                    },
+                    {
+                      "name": "fee_name",
+                      "value": "@fee.name"
+                    }
+                  ],
+                  "config": {
+                    "filter": "(@df.Date == @date) & (@df.Note == @note_id)",
+                    "columns": [
+                      "fee_amount",
+                      "fee_stripped",
+                      "fee_incl_lv_yield",
+                      "fee_excl_lv_yield"
+                    ],
+                    "function": {
+                      "name": "get_fee",
+                      "module": "fees",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "-@amount",
+                        "@fee.ovrbaseamt",
+                        "@fee.ovrfeeamt",
+                        "@fee.val",
+                        "@fee.stripval",
+                        "@fee.levyldincl"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "fee_stripped": [
+          {
+            "description": "Calculate Fee Stripping",
+            "type": "foreach",
+            "condition": "(@amount != 0) & (@if_exists(@note.setup, [@effective_date, 'tables'], ['fee_stripping']))",
+            "config": {
+              "foreach_variable_name": "strip",
+              "expression": "@note.setup[@effective_date].tables.fee_stripping",
+              "rules": [
+                {
+                  "description": "Fee Strip",
+                  "type": "accumulate",
+                  "config": {
+                    "filter": "(@df.Date == @date) & (@df.Note == @strip.to)",
+                    "columns": [
+                      "fee_strip_received"
+                    ],
+                    "expression": "@amount * @strip.pct"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "description": "For each effective date, execute the following rules",
+      "type": "foreach",
+      "config": {
+        "foreach_variable_name": "effective_date",
+        "expression": "@effective_dates",
+        "rules": [
+          {
+            "description": "Reset accounts and transactions",
+            "type": "reset_cf",
+            "config": {
+              "filter": "@cf.Date < @effective_date"
+            }
+          },
+          {
+            "description": "For each note, execute the following rules",
+            "type": "foreach",
+            "config": {
+              "foreach_variable_name": "note",
+              "expression": "@notes.values()",
+              "rules": [
+                {
+                  "description": "Read values from note setup",
+                  "type": "read_dict",
+                  "condition": "@if_exists(@note.setup, [@effective_date], ['dictionary'])",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "expression": "@note.setup[@effective_date].dictionary"
+                  }
+                },
+                {
+                  "description": "Read records from tables in note setup - Rate",
+                  "type": "read_records",
+                  "condition": "(@note.type == 'legal') & (@if_exists(@note.setup, [@effective_date, 'tables'], ['rate']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "table": "rate",
+                    "function": {
+                      "name": "get_rates",
+                      "module": "rates",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@note.setup[@effective_date].tables.rate",
+                        "'startdt'"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Read records from tables in note setup - Spread",
+                  "type": "read_records",
+                  "condition": "(@note.type == 'legal') & (@if_exists(@note.setup, [@effective_date, 'tables'], ['spread']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "table": "spread",
+                    "function": {
+                      "name": "get_rates",
+                      "module": "rates",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@note.setup[@effective_date].tables.spread",
+                        "'startdt'"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Read records from tables in note setup - Index Floor",
+                  "type": "read_records",
+                  "condition": "(@note.type == 'legal') & (@if_exists(@note.setup, [@effective_date, 'tables'], ['index_floor']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "table": "index_floor",
+                    "function": {
+                      "name": "get_rates",
+                      "module": "rates",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@note.setup[@effective_date].tables.index_floor",
+                        "'startdt'"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Read records from tables in note setup - Index Cap",
+                  "type": "read_records",
+                  "condition": "(@note.type == 'legal') & (@if_exists(@note.setup, [@effective_date, 'tables'], ['index_cap']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "table": "index_cap",
+                    "function": {
+                      "name": "get_rates",
+                      "module": "rates",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@note.setup[@effective_date].tables.index_cap",
+                        "'startdt'"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Read records from tables in note setup - Coupon Floor",
+                  "type": "read_records",
+                  "condition": "(@note.type == 'legal') & (@if_exists(@note.setup, [@effective_date, 'tables'], ['coupon_floor']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "table": "coupon_floor",
+                    "function": {
+                      "name": "get_rates",
+                      "module": "rates",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@note.setup[@effective_date].tables.coupon_floor",
+                        "'startdt'"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Read records from tables in note setup - Amort Rate",
+                  "type": "read_records",
+                  "condition": "(@note.type == 'legal') & (@if_exists(@note.setup, [@effective_date, 'tables'], ['amort_rate']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "table": "amort_rate",
+                    "function": {
+                      "name": "get_rates",
+                      "module": "rates",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@note.setup[@effective_date].tables.amort_rate",
+                        "'startdt'"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Read records from tables in note setup - PIK Rate",
+                  "type": "read_records",
+                  "condition": "(@note.type == 'legal') & (@if_exists(@note.setup, [@effective_date, 'tables'], ['pikrate']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "table": "pikrate",
+                    "function": {
+                      "name": "get_pikrates",
+                      "module": "rates",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@note.setup[@effective_date].tables.pikrate",
+                        "'startdt'",
+                        "'enddt'"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Read records from tables in note setup - Funding",
+                  "type": "read_records",
+                  "condition": "(@note.type == 'legal') & (@if_exists(@note.setup, [@effective_date, 'tables'], ['funding']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "table": "funding",
+                    "function": {
+                      "name": "get_funding_or_curtailment",
+                      "module": "balance",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@note.setup[@effective_date].tables.funding",
+                        "'dt'"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Identify accrual end dates",
+                  "type": "assignment",
+                  "condition": "(@note.type == 'legal') & (@if_exists(@note.setup, [@effective_date, 'dictionary'], ['initaccenddt','initmatdt', 'leaddays']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "periodstart",
+                      "periodend",
+                      "term",
+                      "indexrefdt"
+                    ],
+                    "function": {
+                      "name": "get_accrual_dates",
+                      "module": "dates",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@df.initaccenddt[0]",
+                        "@df.initmatdt[0]",
+                        "@df.leaddays[0]"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Identify io term end date",
+                  "type": "assignment",
+                  "condition": "(@note.type == 'legal') & (@if_exists(@note.setup, [@effective_date, 'dictionary'], ['initpmtdt','ioterm']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "io_term_end_date"
+                    ],
+                    "expression": "pd.Timestamp(@note.setup[@effective_date].dictionary.initpmtdt) + pd.DateOffset(months=@note.setup[@effective_date].dictionary.ioterm - 1)"
+                  }
+                },
+                {
+                  "description": "Set Discount/Premium - Initialize",
+                  "type": "assignment",
+                  "condition": "(@note.type == 'legal') & (@if_exists(@note.setup, [@effective_dates[0], 'dictionary'], ['discount']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "discount"
+                    ],
+                    "value": 0.0
+                  }
+                },
+                {
+                  "description": "Set Discount/Premium",
+                  "type": "assignment",
+                  "condition": "(@note.type == 'legal') & (@effective_date == @effective_dates[0]) & (@if_exists(@note.setup, [@effective_dates[0], 'dictionary'], ['discount']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date == @df.clsdt)",
+                    "columns": [
+                      "discount"
+                    ],
+                    "expression": "@note.setup[@effective_date].dictionary.discount * -1"
+                  }
+                },
+                {
+                  "description": "Set Capitalized Closing Costs - Initialize",
+                  "type": "assignment",
+                  "condition": "(@note.type == 'legal') & (@if_exists(@note.setup, [@effective_dates[0], 'dictionary'], ['capcosts']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "capcosts"
+                    ],
+                    "value": 0.0
+                  }
+                },
+                {
+                  "description": "Set Capitalized Closing Costs",
+                  "type": "assignment",
+                  "condition": "(@note.type == 'legal') & (@effective_date == @effective_dates[0]) & (@if_exists(@note.setup, [@effective_date, 'dictionary'], ['capcosts']))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date ==  @df.clsdt)",
+                    "columns": [
+                      "capcosts"
+                    ],
+                    "expression": "@note.setup[@effective_date].dictionary.capcosts"
+                  }
+                },
+                {
+                  "description": "Origination Fee - 1% of Total Commitment",
+                  "type": "accumulate",
+                  "condition": "(@note.type == 'legal') & (@effective_date == @effective_dates[0])",
+                  "context": [
+                    {
+                      "name": "fee_prefix",
+                      "value": "OriginationFee"
+                    },
+                    {
+                      "name": "fee_name",
+                      "value": "Origination Fee"
+                    },
+                    {
+                      "name": "fee",
+                      "expression": "[x for x in @note.setup[@effective_date].tables.fee if x.valtype==4][0]"
+                    }
+                  ],
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date == @df.clsdt)",
+                    "columns": [
+                      "fee_amount",
+                      "fee_stripped",
+                      "fee_incl_lv_yield",
+                      "fee_excl_lv_yield"
+                    ],
+                    "function": {
+                      "name": "get_fee",
+                      "module": "fees",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@note.setup[@effective_date].dictionary.totalcmt",
+                        "@fee.ovrbaseamt",
+                        "@fee.ovrfeeamt",
+                        "@fee.val",
+                        "@fee.stripval",
+                        "@fee.levyldincl"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Identify Index Rate",
+                  "type": "assignment",
+                  "condition": "(@note.type == 'legal')",
+                  "config": {
+                    "filter": "(@df.Note == @note.id)",
+                    "columns": [
+                      "indexrate"
+                    ],
+                    "function": {
+                      "name": "get_index_rates",
+                      "module": "rates",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@index",
+                        "@df.roundmethod[0]",
+                        "@df.precision[0]",
+                        "@df.clsdt[0]",
+                        "@df.initresetdt[0]",
+                        "@df[@df.term >= 1].periodstart.unique()",
+                        "@df[@df.term >= 1].indexrefdt.unique()",
+                        "@df.initindex[0]",
+                        "@df.index_floor_val",
+                        "@df.index_cap_val"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Identify All In Coupon Rate",
+                  "type": "assignment",
+                  "condition": "(@note.type == 'legal')",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "allincouponrate"
+                    ],
+                    "function": {
+                      "name": "get_all_in_coupon_rate",
+                      "module": "rates",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.coupon_floor_val",
+                        "@df.spread_val",
+                        "@df.rate_val",
+                        "@df.indexrate"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "description": "Identify remaining term",
+            "type": "assignment",
+            "config": {
+              "filter": "(@df.Date >= pd.Timestamp(@effective_date)) & (~@df.amterm.isna())",
+              "columns": [
+                "rem_term"
+              ],
+              "expression": "@df.amterm - @df.term"
+            }
+          },
+          {
+            "description": "For each day, execute the following rules",
+            "type": "foreach",
+            "config": {
+              "foreach_variable_name": "period",
+              "expression": "@df.Date[pd.Timestamp(@effective_date):].unique()",
+              "rules": [
+                {
+                  "description": "Evaluate Period Filter",
+                  "context": [
+                    {
+                      "name": "is_period",
+                      "expression": "@df.Date == @period"
+                    }
+                  ]
+                },
+                {
+                  "description": "Calculate Scheduled Principal",
+                  "type": "assignment",
+                  "config": {
+                    "filter": "@is_period & (@df.Date == @df.periodend) & (@df.Date > @df.io_term_end_date)",
+                    "columns": [
+                      "schprin"
+                    ],
+                    "function": {
+                      "name": "scheduled_principal",
+                      "module": "balance",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.initbal",
+                        "@df.amort_rate_val",
+                        "@df.rem_term"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Calculate Balloon Payment",
+                  "type": "assignment",
+                  "config": {
+                    "filter": "@is_period & (@df.Date == @df.initmatdt)",
+                    "columns": [
+                      "balloon"
+                    ],
+                    "function": {
+                      "name": "balloon_payment",
+                      "module": "balance",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.initbal",
+                        "@df.funding_fundpydn",
+                        "@df.schprin"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Calculate ending balance",
+                  "type": "assignment",
+                  "context": [
+                    {
+                      "name": "ending_balance",
+                      "function": {
+                        "name": "ending_balance",
+                        "module": "balance",
+                        "package": "m61_finance.cre",
+                        "parameters": [
+                          "@df[@is_period].initbal",
+                          "@df[@is_period].funding_fundpydn",
+                          "@df[@is_period].schprin",
+                          "@df[@is_period].balloon"
+                        ]
+                      }
+                    }
+                  ],
+                  "config": {
+                    "filter": "@is_period",
+                    "columns": [
+                      "endbal"
+                    ],
+                    "expression": "@ending_balance"
+                  }
+                },
+                {
+                  "description": "Calculate beginning balance",
+                  "type": "assignment",
+                  "config": {
+                    "filter": "(@df.Date == (pd.Timestamp(@period) + pd.DateOffset()))",
+                    "columns": [
+                      "initbal"
+                    ],
+                    "expression": "@ending_balance.to_numpy()"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "description": "Calculate Daily Interest",
+            "type": "assignment",
+            "config": {
+              "columns": [
+                "dailyint"
+              ],
+              "function": {
+                "name": "daily_accrued_interest",
+                "module": "coupon",
+                "package": "m61_finance.cre",
+                "parameters": [
+                  "@df.initbal",
+                  "@df.rate_val",
+                  "@df.rate_adj_factor"
+                ]
+              }
+            }
+          },
+          {
+            "description": "Calculate Daily PIK Interest",
+            "type": "assignment",
+            "config": {
+              "columns": [
+                "dailypikint"
+              ],
+              "function": {
+                "name": "daily_accrued_interest",
+                "module": "coupon",
+                "package": "m61_finance.cre",
+                "parameters": [
+                  "@df.initbal",
+                  "@df.pikrate_val",
+                  "@df.pikrate_adj_factor"
+                ]
+              }
+            }
+          },
+          {
+            "description": "Aggregate balance, fee, dailyint",
+            "type": "aggregate",
+            "config": {
+              "columns": [
+                "initbal",
+                "funding_fundpydn",
+                "schprin",
+                "balloon",
+                "endbal",
+                "fee_incl_lv_yield",
+                "dailyint",
+                "dailypikint"
+              ],
+              "type": "sum"
+            }
+          },
+          {
+            "description": "Calculate Cumulative Interest - Convert to Float",
+            "type": "assignment",
+            "config": {
+              "columns": [
+                "float_dailyint"
+              ],
+              "expression": "@df.dailyint.astype('float64')"
+            }
+          },
+          {
+            "description": "Calculate Cumulative Interest",
+            "type": "assignment",
+            "config": {
+              "columns": [
+                "cum_dailyint"
+              ],
+              "expression": "@df.groupby(['Note', 'term']).float_dailyint.cumsum()"
+            }
+          },
+          {
+            "description": "Calculate Cumulative PIKInterest - Convert to Float",
+            "type": "assignment",
+            "config": {
+              "columns": [
+                "float_dailypikint"
+              ],
+              "expression": "@df.dailypikint.astype('float64')"
+            }
+          },
+          {
+            "description": "Calculate Cumulative PIKInterest",
+            "type": "assignment",
+            "config": {
+              "columns": [
+                "cum_dailypikint"
+              ],
+              "expression": "@df.groupby(['Note', 'term']).float_dailypikint.cumsum()"
+            }
+          },
+          {
+            "description": "Calculate Stub Interest",
+            "type": "assignment",
+            "config": {
+              "filter": "(@df.term ==  0) & (@df.Date == @df.periodend)",
+              "columns": [
+                "stubint"
+              ],
+              "expression": "@df.cum_dailyint"
+            }
+          },
+          {
+            "description": "Calculate Accrual Period  Interest",
+            "type": "assignment",
+            "config": {
+              "filter": "(@df.term >  0) & (@df.Date == @df.periodend)",
+              "columns": [
+                "periodint"
+              ],
+              "expression": "@df.cum_dailyint"
+            }
+          },
+          {
+            "description": "Calculate Accrual Period PIK Interest",
+            "type": "assignment",
+            "config": {
+              "filter": "(@df.term >  0) & (@df.Date == @df.periodend)",
+              "columns": [
+                "periodpikint"
+              ],
+              "expression": "@df.cum_dailypikint"
+            }
+          },
+          {
+            "description": "Calculate Gross Deferred Fee for the Effective Date",
+            "type": "assignment",
+            "config": {
+              "filter": "@df.Date >= @effective_date",
+              "columns": [
+                "gross_def_fees"
+              ],
+              "expression": "@df.fee_incl_lv_yield.sum()"
+            }
+          },
+          {
+            "description": "Calculate Clean Cost",
+            "type": "assignment",
+            "config": {
+              "filter": "@df.Date >= @effective_date",
+              "columns": [
+                "clean_cost"
+              ],
+              "expression": "@df.endbal - @df.gross_def_fees + @df.discount[0]  + @df.capcosts[0]"
+            }
+          },
+          {
+            "description": "Calculate Clean Cost - Convert to Float",
+            "type": "assignment",
+            "config": {
+              "columns": [
+                "float_clean_cost"
+              ],
+              "expression": "@df.clean_cost.astype('float64')"
+            }
+          },
+          {
+            "description": "For each note, execute the basis rules",
+            "type": "foreach",
+            "condition": "@calc_basis",
+            "config": {
+              "foreach_variable_name": "note",
+              "expression": "@notes.values()",
+              "rules": [
+                {
+                  "description": "Calculate Level Yield - Deferred Fee Yield",
+                  "type": "assignment",
+                  "condition": "@calc_deffee_basis & (@note.type == 'legal')",
+                  "context": [
+                    {
+                      "name": "prev_gaapbasis",
+                      "expression": "-@df.at[(pd.Timestamp(@effective_date) - pd.DateOffset(), @note.id), 'gaapbasis'] if @df.clsdt[0] != pd.Timestamp(@effective_date) else -@note.setup[@effective_dates[0]].dictionary.initbal"
+                    }
+                  ],
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "levyld"
+                    ],
+                    "function": {
+                      "name": "calculate_level_yield",
+                      "module": "basis",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@df.initbal-@df.endbal+@df.fee_incl_lv_yield",
+                        "(pd.Timestamp(@effective_date) - pd.DateOffset()) if @df.clsdt[0]!= pd.Timestamp(@effective_date) else @df.clsdt[0]",
+                        "@prev_gaapbasis"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Calculate Gaap Basis - Deferred Fee Basis",
+                  "type": "assignment",
+                  "condition": "@calc_deffee_basis & (@note.type == 'legal')",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "gaapbasis"
+                    ],
+                    "function": {
+                      "name": "calculate_gaapbasis",
+                      "module": "basis",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@df.initbal-@df.endbal",
+                        "@df.fee_incl_lv_yield",
+                        "@df.levyld[0]"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Calculate Fee Amort",
+                  "type": "assignment",
+                  "condition": "@calc_deffee_basis & (@note.type == 'legal')",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "feeamort"
+                    ],
+                    "function": {
+                      "name": "calculate_feeamort",
+                      "module": "basis",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.initbal-@df.endbal",
+                        "@df.fee_incl_lv_yield",
+                        "@df.gaapbasis"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Calculate Cumulative Amort(Def Fee) - Convert to Float",
+                  "type": "assignment",
+                  "condition": "@calc_deffee_basis & (@note.type == 'legal')",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "float_am_fee"
+                    ],
+                    "expression": "@df.feeamort.astype('float64')"
+                  }
+                },
+                {
+                  "description": "Calculate Cumulative Amort (Def Fee)",
+                  "type": "assignment",
+                  "condition": "@calc_deffee_basis & (@note.type == 'legal')",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "cum_am_fee"
+                    ],
+                    "expression": "@df.float_am_fee.cumsum()"
+                  }
+                },
+                {
+                  "description": "Calculate Level Yield - Discount/Prmium Yield",
+                  "type": "assignment",
+                  "condition": "(@calc_disc_basis & (@note.type == 'legal') & (@if_exists(@note.setup, [@effective_dates[0], 'dictionary'], ['discount'])))",
+                  "context": [
+                    {
+                      "name": "prev_gaapbasis",
+                      "expression": "-@df.at[(pd.Timestamp(@effective_date) - pd.DateOffset(), @note.id), 'bas_disc'] if @df.clsdt[0] != pd.Timestamp(@effective_date) else  -@note.setup[@effective_dates[0]].dictionary.initbal"
+                    }
+                  ],
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "yld_disc"
+                    ],
+                    "function": {
+                      "name": "calculate_level_yield",
+                      "module": "basis",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@df.initbal-@df.endbal+@df.discount",
+                        "(pd.Timestamp(@effective_date) - pd.DateOffset()) if @df.clsdt[0]!= pd.Timestamp(@effective_date) else @df.clsdt[0]",
+                        "@prev_gaapbasis"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Calculate Gaap Basis - Discout/Premium Basis",
+                  "type": "assignment",
+                  "condition": "(@calc_disc_basis & (@note.type == 'legal') & (@if_exists(@note.setup, [@effective_dates[0], 'dictionary'], ['discount'])))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "bas_disc"
+                    ],
+                    "function": {
+                      "name": "calculate_gaapbasis",
+                      "module": "basis",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@df.initbal-@df.endbal",
+                        "@df.discount",
+                        "@df.yld_disc[0]"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Calculate Fee Amort",
+                  "type": "assignment",
+                  "condition": "(@calc_disc_basis & (@note.type == 'legal') & (@if_exists(@note.setup, [@effective_dates[0], 'dictionary'], ['discount'])))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "am_disc"
+                    ],
+                    "function": {
+                      "name": "calculate_feeamort",
+                      "module": "basis",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.initbal-@df.endbal",
+                        "@df.discount",
+                        "@df.bas_disc"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Calculate Cumulative Amort(Discount) - Convert to Float",
+                  "type": "assignment",
+                  "condition": "(@calc_disc_basis & (@note.type == 'legal') & (@if_exists(@note.setup, [@effective_dates[0], 'dictionary'], ['discount'])))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "float_am_disc"
+                    ],
+                    "expression": "@df.am_disc.astype('float64')"
+                  }
+                },
+                {
+                  "description": "Calculate Cumulative Amort (Discout)",
+                  "type": "assignment",
+                  "condition": "(@calc_disc_basis & (@note.type == 'legal') & (@if_exists(@note.setup, [@effective_dates[0], 'dictionary'], ['discount'])))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "cum_am_disc"
+                    ],
+                    "expression": "@df.float_am_disc.cumsum()"
+                  }
+                },
+                {
+                  "description": "Calculate Level Yield - Capitalized Costs",
+                  "type": "assignment",
+                  "condition": "(@calc_capcosts_basis & (@note.type == 'legal') & (@if_exists(@note.setup, [@effective_dates[0], 'dictionary'], ['capcosts'])))",
+                  "context": [
+                    {
+                      "name": "prev_gaapbasis",
+                      "expression": "-@df.at[(pd.Timestamp(@effective_date) - pd.DateOffset(), @note.id), 'bas_capcosts'] if @df.clsdt[0] != pd.Timestamp(@effective_date) else  -@note.setup[@effective_dates[0]].dictionary.initbal"
+                    }
+                  ],
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "yld_capcosts"
+                    ],
+                    "function": {
+                      "name": "calculate_level_yield",
+                      "module": "basis",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@df.initbal-@df.endbal+@df.capcosts",
+                        "(pd.Timestamp(@effective_date) - pd.DateOffset()) if @df.clsdt[0]!= pd.Timestamp(@effective_date) else @df.clsdt[0]",
+                        "@prev_gaapbasis"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Calculate Gaap Basis - Capitalized Closing Costs",
+                  "type": "assignment",
+                  "condition": "(@calc_capcosts_basis & (@note.type == 'legal') & (@if_exists(@note.setup, [@effective_dates[0], 'dictionary'], ['capcosts'])))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "bas_capcosts"
+                    ],
+                    "function": {
+                      "name": "calculate_gaapbasis",
+                      "module": "basis",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.Date",
+                        "@df.initbal-@df.endbal",
+                        "@df.capcosts",
+                        "@df.yld_capcosts[0]"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Calculate Cap Costs Amort",
+                  "type": "assignment",
+                  "condition": "(@calc_capcosts_basis & (@note.type == 'legal') & (@if_exists(@note.setup, [@effective_dates[0], 'dictionary'], ['capcosts'])))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "am_capcosts"
+                    ],
+                    "function": {
+                      "name": "calculate_feeamort",
+                      "module": "basis",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.initbal-@df.endbal",
+                        "@df.capcosts",
+                        "@df.bas_capcosts"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "description": "Calculate Cumulative Amort(Cap Costs) - Convert to Float",
+                  "type": "assignment",
+                  "condition": "(@calc_capcosts_basis & (@note.type == 'legal') & (@if_exists(@note.setup, [@effective_dates[0], 'dictionary'], ['capcosts'])))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "float_am_capcosts"
+                    ],
+                    "expression": "@df.am_capcosts.astype('float64')"
+                  }
+                },
+                {
+                  "description": "Calculate Cumulative Amort (Cap Costs)",
+                  "type": "assignment",
+                  "condition": "(@calc_capcosts_basis & (@note.type == 'legal') & (@if_exists(@note.setup, [@effective_dates[0], 'dictionary'], ['capcosts'])))",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "cum_am_capcosts"
+                    ],
+                    "expression": "@df.float_am_capcosts.cumsum()"
+                  }
+                },
+                {
+                  "description": "Calculate GAAP BV",
+                  "type": "assignment",
+                  "config": {
+                    "filter": "(@df.Note == @note.id) & (@df.Date >= pd.Timestamp(@effective_date))",
+                    "columns": [
+                      "gaapbv"
+                    ],
+                    "function": {
+                      "name": "calculate_gaapbv",
+                      "module": "basis",
+                      "package": "m61_finance.cre",
+                      "parameters": [
+                        "@df.float_clean_cost",
+                        "@df.cum_dailyint",
+                        "@df.cum_dailypikint",
+                        "@df.cum_am_fee",
+                        "@df.cum_am_disc",
+                        "@df.cum_am_capcosts"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "description": "Extracts periodic data from data frame based on configuration",
+      "type": "output_rows",
+      "config": {
+        "filter": "@df.Date+pd.tseries.offsets.MonthEnd(0)==@df.Date",
+        "columns": [
+          "Date",
+          "Note",
+          "initbal",
+          "endbal",
+          "schprin",
+          "funding_fundpydn"
+        ],
+        "writer": {
+          "method": "to_csv",
+          "file": "periodic.csv"
+        }
+      }
+    },
+    {
+      "description": "Extracts specific transactions from data frame based on configuration",
+      "type": "output_values",
+      "config": {
+        "transactions": [
+          {
+            "filter": "@df.Date==@df.clsdt",
+            "column": "initbal",
+            "addl_columns": {
+              "Closing Date": "clsdt"
+            },
+            "type": "InitialFunding"
+          }
+        ],
+        "writer": {
+          "method": "to_csv",
+          "file": "transactions.csv",
+          "settings": {
+            "index": "False"
+          }
+        }
+      }
+    }
+  ],
+  "data": {
+    "period_start_date": "12/30/2020",
+    "effective_dates": [
+      "12/30/2020",
+      "02/28/2021",
+      "03/31/2021",
+      "05/31/2021",
+      "07/31/2021"
+    ],
+    "period_end_date": "01/10/2026",
+    "root_note_id": "20-0429",
+    "rulesets": {
+      "pay": [
+        {
+          "description": "des1",
+          "condition": "condition1",
+          "config": {
+            "cumulative_threshold": "22125000.000000000000000",
+            "note": "14310",
+            "weight": "0.5000000000"
+          }
+        },
+        {
+          "description": "des1",
+          "condition": "condition1",
+          "config": {
+            "cumulative_threshold": "22125000.000000000000000",
+            "note": "15125",
+            "weight": "0.5000000000"
+          }
+        },
+        {
+          "description": "des1",
+          "condition": "condition1",
+          "config": {
+            "cumulative_threshold": "0.000000000000000",
+            "note": "15126",
+            "weight": "0.0000000000"
+          }
+        },
+        {
+          "description": "des1",
+          "condition": "condition1",
+          "config": {
+            "cumulative_threshold": "0.000000000000000",
+            "note": "14310",
+            "weight": "0.0000000000"
+          }
+        }
+      ]
+    },
+    "accounts": {
+      "Date": {},
+      "Note": {},
+      "initbal": {
+        "default": 0
+      },
+      "funding_fundpydn": {
+        "default": 0,
+        "transaction": {
+          "type": "FundingOrRepayment"
+        }
+      },
+      "schprin": {
+        "default": 0,
+        "transaction": {
+          "type": "ScheduledPrincipalPaid"
+        }
+      },
+      "balloon": {
+        "default": 0,
+        "transaction": {
+          "type": "Balloon"
+        }
+      },
+      "endbal": {
+        "default": 0
+      },
+      "fee_amount": {
+        "default": 0
+      },
+      "fee_stripped": {
+        "default": 0
+      },
+      "fee_strip_received": {
+        "default": 0,
+        "transaction": {
+          "type": "@fee_prefix + 'StripReceivable'",
+          "addl_columns": {
+            "Fee Name": "@fee_name"
+          }
+        }
+      },
+      "fee_incl_lv_yield": {
+        "default": 0,
+        "transaction": {
+          "type": "@fee_prefix + 'IncludedInLevelYield'",
+          "addl_columns": {
+            "Fee Name": "@fee_name"
+          }
+        }
+      },
+      "fee_excl_lv_yield": {
+        "default": 0,
+        "transaction": {
+          "type": "@fee_prefix + 'ExcludedFromLevelYield'",
+          "addl_columns": {
+            "Fee Name": "@fee_name"
+          }
+        }
+      },
+      "dailyint": {
+        "default": 0
+      },
+      "stubint": {
+        "default": 0,
+        "transaction": {
+          "type": "StubInterest",
+          "addl_columns": {
+            "Rate": "rate_val"
+          }
+        }
+      },
+      "periodint": {
+        "default": 0,
+        "transaction": {
+          "type": "InterestPaid",
+          "addl_columns": {
+            "Rate": "rate_val"
+          }
+        }
+      },
+      "clsdt": {},
+      "totalcmt": {},
+      "initmatdt": {},
+      "initaccenddt": {},
+      "initpmtdt": {},
+      "ioterm": {
+        "default": 0
+      },
+      "amterm": {
+        "default": 0
+      },
+      "rate_valtype": {
+        "default": 0
+      },
+      "rate_val": {
+        "default": 0
+      },
+      "rate_intcalcdays": {
+        "default": 0
+      },
+      "rate_adj_factor": {
+        "default": 0
+      },
+      "amort_rate_val": {
+        "default": 0
+      },
+      "amort_rate_intcalcdays": {
+        "default": 0
+      },
+      "amort_rate_adj_factor": {
+        "default": 0
+      },
+      "pikrate_valtype": {
+        "default": 0
+      },
+      "pikrate_val": {
+        "default": 0
+      },
+      "pikrate_intcalcdays": {
+        "default": 0
+      },
+      "pikrate_adj_factor": {
+        "default": 0
+      },
+      "dailypikint": {
+        "default": 0
+      },
+      "periodpikint": {
+        "default": 0,
+        "transaction": {
+          "type": "PIKInterest",
+          "addl_columns": {
+            "Rate": "pikrate_val"
+          }
+        }
+      },
+      "periodstart": {},
+      "periodend": {},
+      "term": {
+        "default": 0
+      },
+      "indexrefdt": {},
+      "indexrate": {},
+      "index_floor_val": {
+        "default": 0
+      },
+      "index_cap_val": {
+        "default": 1
+      },
+      "roundmethod": {
+        "default": ""
+      },
+      "precision": {
+        "default": 12
+      },
+      "allincouponrate": {},
+      "coupon_floor_val": {
+        "default": 0
+      },
+      "io_term_end_date": {},
+      "rem_term": {
+        "default": 0
+      },
+      "prev_endbal": {
+        "default": 0
+      },
+      "float_dailyint": {
+        "default": 0
+      },
+      "cum_dailyint": {
+        "default": 0
+      },
+      "float_dailypikint": {
+        "default": 0
+      },
+      "cum_dailypikint": {
+        "default": 0
+      },
+      "discount": {
+        "default": 0
+      },
+      "capcosts": {
+        "default": 0
+      },
+      "gross_def_fees": {
+        "default": 0
+      },
+      "clean_cost": {
+        "default": 0
+      },
+      "float_clean_cost": {
+        "default": 0
+      },
+      "levyld": {},
+      "gaapbasis": {},
+      "feeamort": {},
+      "float_am_fee": {},
+      "cum_am_fee": {},
+      "yld_disc": {},
+      "bas_disc": {},
+      "am_disc": {},
+      "float_am_disc": {},
+      "cum_am_disc": {},
+      "yld_capcosts": {},
+      "bas_capcosts": {},
+      "am_capcosts": {},
+      "float_am_capcosts": {},
+      "cum_am_capcosts": {},
+      "gaapbv": {
+        "default": 0
+      }
+    },
+    "structure": [
+      {
+        "from": "20-0429",
+        "to": "14310"
+      },
+      {
+        "from": "20-0429",
+        "to": "15125"
+      },
+      {
+        "from": "20-0429",
+        "to": "15126"
+      }
+    ],
+    "notes": {
+      "14310": {
+        "id": "14310",
+        "name": "Note A1",
+        "type": "legal",
+        "setup": {
+          "12/30/2020": {
+            "dictionary": {
+              "clsdt": "12/30/2020",
+              "initbal": 1000000,
+              "initmatdt": "2/10/2024",
+              "initaccenddt": "2/9/2021",
+              "initpmtdt": "2/10/2021",
+              "ioterm": 60,
+              "amterm": 360,
+              "totalcmt": 23125000,
+              "leaddays": 0,
+              "initresetdt": "1/10/21",
+              "initindex": 0.015,
+              "roundmethod": "UP",
+              "precision": 6,
+              "discount": -200000
+            },
+            "tables": {
+              "spread": [
+                {
+                  "startdt": "12/30/2020",
+                  "valtype": "spread",
+                  "val": 0.035,
+                  "intcalcdays": 360
+                },
+                {
+                  "startdt": "7/10/2022",
+                  "valtype": "spread",
+                  "val": 0.02851852,
+                  "intcalcdays": 360
+                }
+              ],
+              "index_floor": [
+                {
+                  "startdt": "12/30/2020",
+                  "valtype": "index_floor",
+                  "val": 0.01,
+                  "intcalcdays": 360
+                }
+              ],
+              "fee": [
+                {
+                  "feename": "Orig Fee 1",
+                  "startdt": "2020-12-30T00:00:00",
+                  "enddt": "2020-12-30T00:00:00",
+                  "type": "Origination Fee",
+                  "valtype": 4,
+                  "val": 0.01,
+                  "ovrfeeamt": null,
+                  "ovrbaseamt": 23125000,
+                  "trueupflag": "572",
+                  "levyldincl": 1,
+                  "basisincl": 1,
+                  "stripval": 0
+                },
+                {
+                  "feename": "Exit  Fee 1",
+                  "startdt": "2020-12-30T00:00:00",
+                  "enddt": "2026-01-10T00:00:00",
+                  "type": "Exit Fee",
+                  "valtype": 1,
+                  "val": 0.005,
+                  "ovrfeeamt": null,
+                  "ovrbaseamt": 23125000,
+                  "trueupflag": "571",
+                  "levyldincl": "0.000000000000",
+                  "basisincl": 0,
+                  "stripval": 1
+                },
+                {
+                  "feename": "Ext. Fee 1",
+                  "startdt": "2024-02-10T00:00:00",
+                  "enddt": "2025-01-09T00:00:00",
+                  "type": "Extension Fee_COMM",
+                  "valtype": 3,
+                  "val": 0.0025,
+                  "ovrfeeamt": null,
+                  "ovrbaseamt": null,
+                  "trueupflag": "572",
+                  "levyldincl": "0.000000000000",
+                  "basisincl": 0,
+                  "stripval": 0
+                },
+                {
+                  "feename": "Ext. Fee 2",
+                  "startdt": "2025-01-10T00:00:00",
+                  "enddt": "2026-01-09T00:00:00",
+                  "type": "Extension Fee_COMM",
+                  "valtype": 3,
+                  "val": 0.0025,
+                  "ovrfeeamt": null,
+                  "ovrbaseamt": null,
+                  "trueupflag": "572",
+                  "levyldincl": "0.000000000000",
+                  "basisincl": 0,
+                  "stripval": 0
+                }
+              ],
+              "fee_stripping": [
+                {
+                  "to": "15126",
+                  "pct": 0.043243243
+                },
+                {
+                  "to": "15125",
+                  "pct": 0.956756757
+                }
+              ],
+              "rate": [
+                {
+                  "startdt": "7/10/2022",
+                  "valtype": "rate",
+                  "val": 0.02528,
+                  "intcalcdays": 360
+                }
+              ],
+              "coupon_floor": [
+                {
+                  "startdt": "7/10/2022",
+                  "valtype": "coupon_floor",
+                  "val": 0.0025,
+                  "intcalcdays": 360
+                }
+              ],
+              "coupon_cap": [
+                {
+                  "startdt": "7/10/2022",
+                  "valtype": "coupon_cap",
+                  "val": 0.0325,
+                  "intcalcdays": 360
+                }
+              ],
+              "index_cap": [
+                {
+                  "startdt": "7/10/2022",
+                  "valtype": "index_cap",
+                  "val": 0.32,
+                  "intcalcdays": 360
+                }
+              ],
+              "amort_rate": [
+                {
+                  "startdt": "7/10/2022",
+                  "valtype": "amort_rate",
+                  "val": 0.0036,
+                  "intcalcdays": 360
+                }
+              ],
+              "amort_spread": [
+                {
+                  "startdt": "7/10/2022",
+                  "valtype": "amort_spread",
+                  "val": 0.0236,
+                  "intcalcdays": 360
+                }
+              ],
+              "amort_rate_floor": [
+                {
+                  "startdt": "7/10/2022",
+                  "valtype": "amort_rate_floor",
+                  "val": 0.0039,
+                  "intcalcdays": 360
+                }
+              ],
+              "amort_rate_cap": [
+                {
+                  "startdt": "7/10/2022",
+                  "valtype": "amort_rate_cap",
+                  "val": 0.369,
+                  "intcalcdays": 360
+                }
+              ],
+              "reference_rate": [
+                {
+                  "startdt": "7/10/2022",
+                  "valtype": "reference_rate",
+                  "val": 0.0325,
+                  "intcalcdays": 360
+                }
+              ],
+              "funding": [
+                {
+                  "dt": "3/10/2021",
+                  "fundpydn": 229024.8,
+                  "purpose": 318
+                },
+                {
+                  "dt": "4/9/2021",
+                  "fundpydn": 393828.21,
+                  "purpose": 318
+                },
+                {
+                  "dt": "5/10/2021",
+                  "fundpydn": 483449.11,
+                  "purpose": 318
+                },
+                {
+                  "dt": "6/10/2021",
+                  "fundpydn": 443414.22,
+                  "purpose": 318
+                },
+                {
+                  "dt": "7/9/2021",
+                  "fundpydn": 588712.17,
+                  "purpose": 318
+                },
+                {
+                  "dt": "8/10/2021",
+                  "fundpydn": 760412.61,
+                  "purpose": 318
+                },
+                {
+                  "dt": "9/10/2021",
+                  "fundpydn": 934980.07,
+                  "purpose": 318
+                },
+                {
+                  "dt": "10/8/2021",
+                  "fundpydn": 1134213.51,
+                  "purpose": 318
+                },
+                {
+                  "dt": "11/10/2021",
+                  "fundpydn": 1333854.74,
+                  "purpose": 318
+                },
+                {
+                  "dt": "12/10/2021",
+                  "fundpydn": 1494262.87,
+                  "purpose": 318
+                },
+                {
+                  "dt": "1/10/2022",
+                  "fundpydn": 1604699.83,
+                  "purpose": 318
+                },
+                {
+                  "dt": "2/10/2022",
+                  "fundpydn": 1677308.27,
+                  "purpose": 318
+                },
+                {
+                  "dt": "3/10/2022",
+                  "fundpydn": 1682718.55,
+                  "purpose": 318
+                },
+                {
+                  "dt": "4/8/2022",
+                  "fundpydn": 1468841.37,
+                  "purpose": 318
+                },
+                {
+                  "dt": "5/10/2022",
+                  "fundpydn": 1554791.11,
+                  "purpose": 318
+                },
+                {
+                  "dt": "6/10/2022",
+                  "fundpydn": 1423038.83,
+                  "purpose": 318
+                },
+                {
+                  "dt": "7/8/2022",
+                  "fundpydn": 1242421.59,
+                  "purpose": 318
+                },
+                {
+                  "dt": "8/10/2022",
+                  "fundpydn": 1246888.07,
+                  "purpose": 318
+                },
+                {
+                  "dt": "9/9/2022",
+                  "fundpydn": 1275566.83,
+                  "purpose": 318
+                },
+                {
+                  "dt": "10/11/2022",
+                  "fundpydn": 1097192.89,
+                  "purpose": 318
+                },
+                {
+                  "dt": "11/10/2022",
+                  "fundpydn": 55380.35,
+                  "purpose": 318
+                }
+              ]
+            }
+          },
+          "2/28/2021": {
+            "tables": {}
+          },
+          "3/31/2021": {
+            "tables": {}
+          },
+          "5/31/2021": {
+            "tables": {}
+          },
+          "7/31/2021": {
+            "tables": {}
+          }
+        }
+      },
+      "15125": {
+        "id": "15125",
+        "name": "Note B1",
+        "type": "legal",
+        "setup": {
+          "12/30/2020": {
+            "dictionary": {
+              "clsdt": "12/30/2020",
+              "initbal": 0.01,
+              "initmatdt": "2/10/2024",
+              "initaccenddt": "2/9/2021",
+              "initpmtdt": "2/10/2021",
+              "ioterm": 60,
+              "amterm": 360,
+              "totalcmt": 22125000,
+              "leaddays": 0,
+              "initresetdt": "1/10/21",
+              "initindex": 0.015,
+              "roundmethod": "UP",
+              "precision": 6,
+              "capcosts": 50000
+            },
+            "tables": {
+              "spread": [
+                {
+                  "startdt": "12/30/2020",
+                  "valtype": "spread",
+                  "val": 0.1,
+                  "intcalcdays": 360
+                },
+                {
+                  "startdt": "7/10/2022",
+                  "valtype": "spread",
+                  "val": 0.08148148,
+                  "intcalcdays": 360
+                }
+              ],
+              "index_floor": [
+                {
+                  "startdt": "12/30/2020",
+                  "valtype": "index_floor",
+                  "val": 0.01,
+                  "intcalcdays": 360
+                }
+              ],
+              "fee": [
+                {
+                  "feename": "Orig Fee 1",
+                  "startdt": "2020-12-30T00:00:00",
+                  "enddt": "2020-12-30T00:00:00",
+                  "type": "Origination Fee",
+                  "valtype": 4,
+                  "val": 0.01,
+                  "ovrfeeamt": null,
+                  "ovrbaseamt": 22125000,
+                  "trueupflag": "572",
+                  "levyldincl": 1,
+                  "basisincl": 1,
+                  "stripval": 0
+                },
+                {
+                  "feename": "Exit  Fee 1",
+                  "startdt": "2020-12-30T00:00:00",
+                  "enddt": "2026-01-10T00:00:00",
+                  "type": "Exit Fee",
+                  "valtype": 1,
+                  "val": 0.005,
+                  "ovrfeeamt": null,
+                  "ovrbaseamt": 22125000,
+                  "trueupflag": "571",
+                  "levyldincl": "0.000000000000",
+                  "basisincl": 0,
+                  "stripval": 0
+                },
+                {
+                  "feename": "Ext. Fee 1",
+                  "startdt": "2024-02-10T00:00:00",
+                  "enddt": "2025-01-09T00:00:00",
+                  "type": "Extension Fee_COMM",
+                  "valtype": 3,
+                  "val": 0.0025,
+                  "ovrfeeamt": null,
+                  "ovrbaseamt": null,
+                  "trueupflag": "572",
+                  "levyldincl": "0.000000000000",
+                  "basisincl": 0,
+                  "stripval": 0
+                },
+                {
+                  "feename": "Ext. Fee 2",
+                  "startdt": "2025-01-10T00:00:00",
+                  "enddt": "2026-01-09T00:00:00",
+                  "type": "Extension Fee_COMM",
+                  "valtype": 3,
+                  "val": 0.0025,
+                  "ovrfeeamt": null,
+                  "ovrbaseamt": null,
+                  "trueupflag": "572",
+                  "levyldincl": "0.000000000000",
+                  "basisincl": 0,
+                  "stripval": 0
+                }
+              ],
+              "funding": [
+                {
+                  "dt": "3/10/2021",
+                  "fundpydn": 229024.8,
+                  "purpose": 318
+                },
+                {
+                  "dt": "4/9/2021",
+                  "fundpydn": 393828.22,
+                  "purpose": 318
+                },
+                {
+                  "dt": "5/10/2021",
+                  "fundpydn": 483449.11,
+                  "purpose": 318
+                },
+                {
+                  "dt": "6/10/2021",
+                  "fundpydn": 443414.22,
+                  "purpose": 318
+                },
+                {
+                  "dt": "7/9/2021",
+                  "fundpydn": 588712.18,
+                  "purpose": 318
+                },
+                {
+                  "dt": "8/10/2021",
+                  "fundpydn": 760412.62,
+                  "purpose": 318
+                },
+                {
+                  "dt": "9/10/2021",
+                  "fundpydn": 934980.06,
+                  "purpose": 318
+                },
+                {
+                  "dt": "10/8/2021",
+                  "fundpydn": 1134213.51,
+                  "purpose": 318
+                },
+                {
+                  "dt": "11/10/2021",
+                  "fundpydn": 1333854.74,
+                  "purpose": 318
+                },
+                {
+                  "dt": "12/10/2021",
+                  "fundpydn": 1494262.86,
+                  "purpose": 318
+                },
+                {
+                  "dt": "1/10/2022",
+                  "fundpydn": 1604699.84,
+                  "purpose": 318
+                },
+                {
+                  "dt": "2/10/2022",
+                  "fundpydn": 1677308.26,
+                  "purpose": 318
+                },
+                {
+                  "dt": "3/10/2022",
+                  "fundpydn": 1682718.56,
+                  "purpose": 318
+                },
+                {
+                  "dt": "4/8/2022",
+                  "fundpydn": 1468841.37,
+                  "purpose": 318
+                },
+                {
+                  "dt": "5/10/2022",
+                  "fundpydn": 1554791.12,
+                  "purpose": 318
+                },
+                {
+                  "dt": "6/10/2022",
+                  "fundpydn": 1423038.83,
+                  "purpose": 318
+                },
+                {
+                  "dt": "7/8/2022",
+                  "fundpydn": 1242421.6,
+                  "purpose": 318
+                },
+                {
+                  "dt": "8/10/2022",
+                  "fundpydn": 1246888.08,
+                  "purpose": 318
+                },
+                {
+                  "dt": "9/9/2022",
+                  "fundpydn": 1275566.82,
+                  "purpose": 318
+                },
+                {
+                  "dt": "10/11/2022",
+                  "fundpydn": 1097192.89,
+                  "purpose": 318
+                },
+                {
+                  "dt": "11/10/2022",
+                  "fundpydn": 55380.31,
+                  "purpose": 318
+                }
+              ]
+            }
+          },
+          "2/28/2021": {
+            "tables": {}
+          },
+          "3/31/2021": {
+            "tables": {}
+          },
+          "5/31/2021": {
+            "tables": {}
+          },
+          "7/31/2021": {
+            "tables": {}
+          }
+        }
+      },
+      "15126": {
+        "id": "15126",
+        "name": "Mezz 1",
+        "type": "legal",
+        "setup": {
+          "12/30/2020": {
+            "dictionary": {
+              "clsdt": "12/30/2020",
+              "initbal": 1000000,
+              "initmatdt": "2/10/2024",
+              "initaccenddt": "2/9/2021",
+              "initpmtdt": "2/10/2021",
+              "ioterm": 60,
+              "amterm": 360,
+              "totalcmt": 1000000,
+              "leaddays": 0,
+              "initresetdt": "1/10/21",
+              "initindex": 0.015,
+              "roundmethod": "UP",
+              "precision": 6
+            },
+            "tables": {
+              "spread": [
+                {
+                  "startdt": "12/30/2020",
+                  "valtype": "spread",
+                  "val": 0.1,
+                  "intcalcdays": 360
+                },
+                {
+                  "startdt": "7/10/2022",
+                  "valtype": "spread",
+                  "val": 0.08148148,
+                  "intcalcdays": 360
+                }
+              ],
+              "index_floor": [
+                {
+                  "startdt": "12/30/2020",
+                  "valtype": "index_floor",
+                  "val": 0.01,
+                  "intcalcdays": 360
+                }
+              ],
+              "fee": [
+                {
+                  "feename": "Orig Fee 1",
+                  "startdt": "2020-12-30T00:00:00",
+                  "enddt": "2020-12-30T00:00:00",
+                  "type": "Origination Fee",
+                  "valtype": 4,
+                  "val": 0.01,
+                  "ovrfeeamt": null,
+                  "ovrbaseamt": 1000000,
+                  "trueupflag": "572",
+                  "levyldincl": 1,
+                  "basisincl": 1,
+                  "stripval": 0
+                },
+                {
+                  "feename": "Exit  Fee 1",
+                  "startdt": "2020-12-30T00:00:00",
+                  "enddt": "2026-01-10T00:00:00",
+                  "type": "Exit Fee",
+                  "valtype": 1,
+                  "val": 0.005,
+                  "ovrfeeamt": null,
+                  "ovrbaseamt": 1000000,
+                  "trueupflag": "571",
+                  "levyldincl": "0.000000000000",
+                  "basisincl": 0,
+                  "stripval": 0
+                },
+                {
+                  "feename": "Ext. Fee 1",
+                  "startdt": "2024-02-10T00:00:00",
+                  "enddt": "2025-01-09T00:00:00",
+                  "type": "Extension Fee_COMM",
+                  "valtype": 3,
+                  "val": 0.0025,
+                  "ovrfeeamt": null,
+                  "ovrbaseamt": null,
+                  "trueupflag": "572",
+                  "levyldincl": "0.000000000000",
+                  "basisincl": 0,
+                  "stripval": 0
+                },
+                {
+                  "feename": "Ext. Fee 2",
+                  "startdt": "2025-01-10T00:00:00",
+                  "enddt": "2026-01-09T00:00:00",
+                  "type": "Extension Fee_COMM",
+                  "valtype": 3,
+                  "val": 0.0025,
+                  "ovrfeeamt": null,
+                  "ovrbaseamt": null,
+                  "trueupflag": "572",
+                  "levyldincl": "0.000000000000",
+                  "basisincl": 0,
+                  "stripval": 0
+                }
+              ]
+            }
+          }
+        }
+      },
+      "20-0429": {
+        "id": "20-0429",
+        "name": "Mossdale Landing Apartments",
+        "type": "wholenote",
+        "setup": {
+          "12/30/2020": {
+            "dictionary": {
+              "clsdt": "12/30/2020",
+              "initbal": 1000000,
+              "initmatdt": "2/10/2024",
+              "initaccenddt": "2/9/2021",
+              "initpmtdt": "2/10/2021",
+              "ioterm": 60,
+              "amterm": 360,
+              "totalcmt": 1000000
+            }
+          }
+        }
+      }
+    },
+    "index": {
+      "01/01/2015": 0.0017125,
+      "01/02/2015": 0.001675,
+      "01/05/2015": 0.00168,
+      "01/06/2015": 0.0016775,
+      "01/07/2015": 0.001665,
+      "01/08/2015": 0.0016625,
+      "01/09/2015": 0.0016675,
+      "01/16/2015": 0.00168,
+      "01/19/2015": 0.0016875,
+      "01/20/2015": 0.001685,
+      "01/21/2015": 0.0016675,
+      "01/22/2015": 0.0016825,
+      "01/23/2015": 0.0016775,
+      "01/26/2015": 0.00169,
+      "01/27/2015": 0.00168,
+      "01/28/2015": 0.001705,
+      "01/29/2015": 0.001709,
+      "01/30/2015": 0.0017125,
+      "02/02/2015": 0.001695,
+      "02/03/2015": 0.00171,
+      "02/04/2015": 0.001735,
+      "02/05/2015": 0.00171,
+      "02/06/2015": 0.001715,
+      "02/09/2015": 0.001722,
+      "02/10/2015": 0.001717,
+      "02/12/2015": 0.00172,
+      "02/13/2015": 0.00173,
+      "02/17/2015": 0.001735,
+      "02/20/2015": 0.001715,
+      "02/23/2015": 0.00171,
+      "02/24/2015": 0.001715,
+      "02/25/2015": 0.00172,
+      "02/26/2015": 0.001719,
+      "02/27/2015": 0.00173,
+      "03/02/2015": 0.001727,
+      "03/03/2015": 0.00173,
+      "03/04/2015": 0.00175,
+      "03/09/2015": 0.001765,
+      "03/10/2015": 0.001779,
+      "03/11/2015": 0.00176,
+      "03/12/2015": 0.001745,
+      "03/13/2015": 0.001765,
+      "03/16/2015": 0.00177,
+      "03/17/2015": 0.001775,
+      "03/18/2015": 0.00176,
+      "03/19/2015": 0.0017325,
+      "03/20/2015": 0.00174,
+      "03/23/2015": 0.0017375,
+      "03/24/2015": 0.0017275,
+      "03/25/2015": 0.001756,
+      "03/26/2015": 0.0017775,
+      "03/27/2015": 0.00178,
+      "03/30/2015": 0.0017925,
+      "03/31/2015": 0.0017625,
+      "04/01/2015": 0.0017755,
+      "04/02/2015": 0.0017975,
+      "04/07/2015": 0.0018015,
+      "04/08/2015": 0.0018095,
+      "04/09/2015": 0.0018,
+      "04/10/2015": 0.001785,
+      "04/13/2015": 0.001815,
+      "04/14/2015": 0.001825,
+      "04/15/2015": 0.001804,
+      "04/16/2015": 0.0018055,
+      "04/17/2015": 0.0018025,
+      "04/20/2015": 0.001805,
+      "04/21/2015": 0.001815,
+      "04/22/2015": 0.0018175,
+      "04/23/2015": 0.0018125,
+      "04/24/2015": 0.001815,
+      "04/27/2015": 0.0018125,
+      "04/28/2015": 0.0018425,
+      "04/29/2015": 0.0018025,
+      "04/30/2015": 0.00181,
+      "05/01/2015": 0.0018225,
+      "05/05/2015": 0.001805,
+      "05/06/2015": 0.0018025,
+      "05/07/2015": 0.001815,
+      "05/08/2015": 0.0018475,
+      "05/11/2015": 0.001856,
+      "05/14/2015": 0.0018335,
+      "05/15/2015": 0.001862,
+      "05/18/2015": 0.00184,
+      "05/19/2015": 0.0018675,
+      "05/20/2015": 0.0018475,
+      "05/22/2015": 0.0018485,
+      "05/26/2015": 0.001863,
+      "05/27/2015": 0.0018535,
+      "05/28/2015": 0.00184,
+      "06/01/2015": 0.00183,
+      "06/02/2015": 0.001848,
+      "06/03/2015": 0.00185,
+      "06/04/2015": 0.0018405,
+      "06/05/2015": 0.00183,
+      "06/08/2015": 0.001854,
+      "06/09/2015": 0.001875,
+      "06/10/2015": 0.0018875,
+      "06/11/2015": 0.001855,
+      "06/12/2015": 0.0018475,
+      "06/15/2015": 0.0018525,
+      "06/16/2015": 0.00185,
+      "06/17/2015": 0.001875,
+      "06/18/2015": 0.0018675,
+      "06/19/2015": 0.00187,
+      "06/24/2015": 0.001865,
+      "06/25/2015": 0.00186,
+      "06/26/2015": 0.001866,
+      "06/30/2015": 0.001865,
+      "07/01/2015": 0.00185,
+      "07/02/2015": 0.0018815,
+      "07/03/2015": 0.001884,
+      "07/06/2015": 0.001865,
+      "07/07/2015": 0.001895,
+      "07/08/2015": 0.001885,
+      "07/09/2015": 0.001867,
+      "07/10/2015": 0.00186,
+      "07/13/2015": 0.001873,
+      "07/14/2015": 0.00187,
+      "07/15/2015": 0.00186,
+      "07/16/2015": 0.00188,
+      "07/17/2015": 0.001905,
+      "07/20/2015": 0.00189,
+      "07/21/2015": 0.00185,
+      "07/22/2015": 0.00187,
+      "07/23/2015": 0.001905,
+      "07/24/2015": 0.00189,
+      "07/28/2015": 0.001908,
+      "07/29/2015": 0.0018955,
+      "07/30/2015": 0.001885,
+      "07/31/2015": 0.0019175,
+      "08/03/2015": 0.001905,
+      "08/04/2015": 0.0019075,
+      "08/05/2015": 0.001935,
+      "08/07/2015": 0.0019125,
+      "08/10/2015": 0.0019255,
+      "08/11/2015": 0.0019345,
+      "08/12/2015": 0.00194,
+      "08/13/2015": 0.001976,
+      "08/14/2015": 0.001996,
+      "08/17/2015": 0.002046,
+      "08/18/2015": 0.0020275,
+      "08/19/2015": 0.00202,
+      "08/20/2015": 0.002004,
+      "08/21/2015": 0.001994,
+      "08/25/2015": 0.0019775,
+      "08/26/2015": 0.00198,
+      "08/27/2015": 0.00197,
+      "08/28/2015": 0.0019855,
+      "09/01/2015": 0.002012,
+      "09/02/2015": 0.002028,
+      "09/03/2015": 0.002043,
+      "09/04/2015": 0.0019925,
+      "09/07/2015": 0.002027,
+      "09/08/2015": 0.00203,
+      "09/09/2015": 0.00204,
+      "09/10/2015": 0.0020635,
+      "09/11/2015": 0.0020655,
+      "09/14/2015": 0.00209,
+      "09/15/2015": 0.0020725,
+      "09/16/2015": 0.002128,
+      "09/17/2015": 0.00216,
+      "09/18/2015": 0.001958,
+      "09/21/2015": 0.00195,
+      "09/22/2015": 0.001956,
+      "09/23/2015": 0.001939,
+      "09/24/2015": 0.001943,
+      "09/28/2015": 0.001936,
+      "09/29/2015": 0.00193,
+      "10/01/2015": 0.00194,
+      "10/02/2015": 0.001947,
+      "10/05/2015": 0.0019375,
+      "10/06/2015": 0.001941,
+      "10/07/2015": 0.0019605,
+      "10/08/2015": 0.0019545,
+      "10/09/2015": 0.0019685,
+      "10/12/2015": 0.0019325,
+      "10/13/2015": 0.0019575,
+      "10/14/2015": 0.00199,
+      "10/15/2015": 0.0019675,
+      "10/16/2015": 0.0019425,
+      "10/19/2015": 0.00196,
+      "10/20/2015": 0.001965,
+      "10/21/2015": 0.001948,
+      "10/22/2015": 0.0019695,
+      "10/23/2015": 0.001935,
+      "10/26/2015": 0.0019355,
+      "10/27/2015": 0.0019075,
+      "10/28/2015": 0.001883,
+      "10/29/2015": 0.00193,
+      "10/30/2015": 0.00192,
+      "11/02/2015": 0.0019,
+      "11/03/2015": 0.001922,
+      "11/04/2015": 0.001932,
+      "11/06/2015": 0.001945,
+      "11/09/2015": 0.00197,
+      "11/10/2015": 0.001955,
+      "11/11/2015": 0.0019575,
+      "11/12/2015": 0.00197,
+      "11/13/2015": 0.0019725,
+      "11/16/2015": 0.0019925,
+      "11/17/2015": 0.002025,
+      "11/18/2015": 0.0020675,
+      "11/19/2015": 0.0021325,
+      "11/20/2015": 0.002115,
+      "11/23/2015": 0.00221,
+      "11/24/2015": 0.00225,
+      "11/25/2015": 0.002315,
+      "11/26/2015": 0.0023275,
+      "11/27/2015": 0.0024375,
+      "11/30/2015": 0.00243,
+      "12/01/2015": 0.0024375,
+      "12/02/2015": 0.00251,
+      "12/03/2015": 0.002686,
+      "12/04/2015": 0.002755,
+      "12/07/2015": 0.00287,
+      "12/08/2015": 0.002931,
+      "12/09/2015": 0.003005,
+      "12/10/2015": 0.00317,
+      "12/11/2015": 0.003305,
+      "12/14/2015": 0.003445,
+      "12/15/2015": 0.003505,
+      "12/16/2015": 0.0036,
+      "12/17/2015": 0.004021,
+      "12/18/2015": 0.00413,
+      "12/21/2015": 0.004195,
+      "12/22/2015": 0.004175,
+      "12/23/2015": 0.004216,
+      "12/24/2015": 0.004219,
+      "12/29/2015": 0.004239,
+      "12/30/2015": 0.004275,
+      "12/31/2015": 0.004295,
+      "01/04/2016": 0.004225,
+      "01/05/2016": 0.00422,
+      "01/06/2016": 0.004235,
+      "01/08/2016": 0.004238,
+      "01/11/2016": 0.00424,
+      "01/12/2016": 0.004245,
+      "01/13/2016": 0.004255,
+      "01/18/2016": 0.00426,
+      "01/19/2016": 0.00425,
+      "01/20/2016": 0.004253,
+      "01/21/2016": 0.004265,
+      "01/22/2016": 0.004255,
+      "01/25/2016": 0.004306,
+      "01/27/2016": 0.00428,
+      "01/28/2016": 0.004262,
+      "01/29/2016": 0.00425,
+      "02/01/2016": 0.00427,
+      "02/02/2016": 0.004285,
+      "02/04/2016": 0.004277,
+      "02/05/2016": 0.004289,
+      "02/08/2016": 0.0042925,
+      "02/09/2016": 0.004285,
+      "02/10/2016": 0.004265,
+      "02/11/2016": 0.00427,
+      "02/12/2016": 0.004305,
+      "02/15/2016": 0.0042925,
+      "02/16/2016": 0.004295,
+      "02/17/2016": 0.0043005,
+      "02/18/2016": 0.00432,
+      "02/19/2016": 0.004335,
+      "02/23/2016": 0.004358,
+      "02/24/2016": 0.004338,
+      "02/25/2016": 0.004385,
+      "02/29/2016": 0.004405,
+      "03/01/2016": 0.0043525,
+      "03/02/2016": 0.004376,
+      "03/03/2016": 0.004405,
+      "03/04/2016": 0.00438,
+      "03/07/2016": 0.004405,
+      "03/08/2016": 0.0044185,
+      "03/09/2016": 0.00438,
+      "03/10/2016": 0.004381,
+      "03/11/2016": 0.004362,
+      "03/14/2016": 0.004413,
+      "03/15/2016": 0.0044125,
+      "03/16/2016": 0.004399,
+      "03/17/2016": 0.004321,
+      "03/18/2016": 0.004283,
+      "03/21/2016": 0.004318,
+      "03/22/2016": 0.004315,
+      "03/23/2016": 0.00433,
+      "03/24/2016": 0.00435,
+      "03/29/2016": 0.004329,
+      "03/30/2016": 0.00434,
+      "03/31/2016": 0.0043725,
+      "04/01/2016": 0.0043735,
+      "04/04/2016": 0.004402,
+      "04/05/2016": 0.004385,
+      "04/06/2016": 0.00439,
+      "04/07/2016": 0.0043645,
+      "04/08/2016": 0.004347,
+      "04/11/2016": 0.004359,
+      "04/12/2016": 0.0043715,
+      "04/13/2016": 0.0043275,
+      "04/14/2016": 0.0043625,
+      "04/18/2016": 0.0043875,
+      "04/19/2016": 0.0044115,
+      "04/20/2016": 0.0044125,
+      "04/21/2016": 0.0043885,
+      "04/22/2016": 0.0043645,
+      "04/25/2016": 0.0043695,
+      "04/26/2016": 0.004377,
+      "04/27/2016": 0.004352,
+      "04/28/2016": 0.004388,
+      "04/29/2016": 0.0043575,
+      "05/03/2016": 0.004359,
+      "05/06/2016": 0.0043715,
+      "05/09/2016": 0.0043865,
+      "05/10/2016": 0.004373,
+      "05/11/2016": 0.0043465,
+      "05/12/2016": 0.0043445,
+      "05/13/2016": 0.0043395,
+      "05/16/2016": 0.004362,
+      "05/17/2016": 0.004387,
+      "05/18/2016": 0.0043845,
+      "05/19/2016": 0.00443,
+      "05/20/2016": 0.0044325,
+      "05/23/2016": 0.00446,
+      "05/24/2016": 0.004442,
+      "05/25/2016": 0.004497,
+      "05/26/2016": 0.0045445,
+      "05/27/2016": 0.0045665,
+      "05/31/2016": 0.0046885,
+      "06/01/2016": 0.0046955,
+      "06/02/2016": 0.0046305,
+      "06/03/2016": 0.004648,
+      "06/06/2016": 0.0044705,
+      "06/07/2016": 0.004458,
+      "06/08/2016": 0.004453,
+      "06/09/2016": 0.0044705,
+      "06/10/2016": 0.0044655,
+      "06/13/2016": 0.0044205,
+      "06/14/2016": 0.004423,
+      "06/15/2016": 0.0044605,
+      "06/16/2016": 0.0044805,
+      "06/17/2016": 0.004478,
+      "06/20/2016": 0.0044805,
+      "06/21/2016": 0.004508,
+      "06/22/2016": 0.0045205,
+      "06/23/2016": 0.004533,
+      "06/24/2016": 0.004493,
+      "06/27/2016": 0.004588,
+      "06/28/2016": 0.004603,
+      "06/29/2016": 0.0046655,
+      "06/30/2016": 0.0046505,
+      "07/01/2016": 0.0046755,
+      "07/04/2016": 0.0046955,
+      "07/05/2016": 0.004703,
+      "07/06/2016": 0.0047255,
+      "07/07/2016": 0.004743,
+      "07/08/2016": 0.004758,
+      "07/11/2016": 0.0047785,
+      "07/12/2016": 0.0047935,
+      "07/13/2016": 0.0048135,
+      "07/14/2016": 0.004821,
+      "07/15/2016": 0.004833,
+      "07/18/2016": 0.0048655,
+      "07/19/2016": 0.004853,
+      "07/20/2016": 0.004874,
+      "07/21/2016": 0.004879,
+      "07/22/2016": 0.004904,
+      "07/25/2016": 0.004909,
+      "07/26/2016": 0.0049265,
+      "07/27/2016": 0.0049565,
+      "07/28/2016": 0.004939,
+      "07/29/2016": 0.004959,
+      "08/01/2016": 0.004939,
+      "08/03/2016": 0.004969,
+      "08/04/2016": 0.004984,
+      "08/05/2016": 0.005039,
+      "08/08/2016": 0.005119,
+      "08/09/2016": 0.0051315,
+      "08/10/2016": 0.0051765,
+      "08/11/2016": 0.0050765,
+      "08/12/2016": 0.0050665,
+      "08/15/2016": 0.0050744,
+      "08/17/2016": 0.0051411,
+      "08/18/2016": 0.0051244,
+      "08/19/2016": 0.0052106,
+      "08/22/2016": 0.0052217,
+      "08/23/2016": 0.0052439,
+      "08/24/2016": 0.0051994,
+      "08/25/2016": 0.0052383,
+      "08/26/2016": 0.0052439,
+      "08/30/2016": 0.0052322,
+      "08/31/2016": 0.0052489,
+      "09/01/2016": 0.0052294,
+      "09/02/2016": 0.0052572,
+      "09/05/2016": 0.0051933,
+      "09/06/2016": 0.0051656,
+      "09/07/2016": 0.0051322,
+      "09/08/2016": 0.0051822,
+      "09/09/2016": 0.0052689,
+      "09/12/2016": 0.0052772,
+      "09/13/2016": 0.0052428,
+      "09/14/2016": 0.0052956,
+      "09/15/2016": 0.0053094,
+      "09/16/2016": 0.0053178,
+      "09/19/2016": 0.0053617,
+      "09/20/2016": 0.0054306,
+      "09/21/2016": 0.0054633,
+      "09/22/2016": 0.0052528,
+      "09/23/2016": 0.0052222,
+      "09/26/2016": 0.0052444,
+      "09/27/2016": 0.0052667,
+      "09/28/2016": 0.0052438,
+      "09/29/2016": 0.0052722,
+      "09/30/2016": 0.0053111,
+      "10/03/2016": 0.0052833,
+      "10/04/2016": 0.0052722,
+      "10/05/2016": 0.0052567,
+      "10/07/2016": 0.00529,
+      "10/10/2016": 0.0052956,
+      "10/11/2016": 0.0053067,
+      "10/12/2016": 0.0053456,
+      "10/14/2016": 0.0053567,
+      "10/17/2016": 0.0052789,
+      "10/18/2016": 0.0052567,
+      "10/19/2016": 0.0052456,
+      "10/20/2016": 0.00524,
+      "10/21/2016": 0.00534,
+      "10/25/2016": 0.0053589,
+      "10/26/2016": 0.0053478,
+      "10/27/2016": 0.0053433,
+      "10/28/2016": 0.0053267,
+      "10/31/2016": 0.0053378,
+      "11/01/2016": 0.0053044,
+      "11/02/2016": 0.00532,
+      "11/03/2016": 0.0053256,
+      "11/04/2016": 0.0053533,
+      "11/08/2016": 0.00537,
+      "11/09/2016": 0.0053644,
+      "11/10/2016": 0.0053817,
+      "11/14/2016": 0.0054206,
+      "11/15/2016": 0.0055011,
+      "11/16/2016": 0.0055456,
+      "11/17/2016": 0.0056178,
+      "11/18/2016": 0.00566,
+      "11/21/2016": 0.0056778,
+      "11/22/2016": 0.0058422,
+      "11/23/2016": 0.00592,
+      "11/24/2016": 0.0060256,
+      "11/25/2016": 0.0060589,
+      "11/28/2016": 0.0060561,
+      "11/29/2016": 0.0061672,
+      "11/30/2016": 0.0062367,
+      "12/01/2016": 0.006345,
+      "12/02/2016": 0.0064667,
+      "12/05/2016": 0.0065194,
+      "12/06/2016": 0.0064889,
+      "12/07/2016": 0.0065417,
+      "12/08/2016": 0.0066389,
+      "12/09/2016": 0.0068,
+      "12/12/2016": 0.0069472,
+      "12/13/2016": 0.0070389,
+      "12/14/2016": 0.0070728,
+      "12/15/2016": 0.0073622,
+      "12/16/2016": 0.00739,
+      "12/19/2016": 0.00744,
+      "12/20/2016": 0.00749,
+      "12/21/2016": 0.00755,
+      "12/22/2016": 0.0075611,
+      "12/23/2016": 0.0076111,
+      "12/28/2016": 0.0077,
+      "12/29/2016": 0.0077111,
+      "12/30/2016": 0.0077167,
+      "01/03/2017": 0.0077333,
+      "01/04/2017": 0.0076556,
+      "01/06/2017": 0.0076333,
+      "01/10/2017": 0.00765,
+      "01/11/2017": 0.0076722,
+      "01/13/2017": 0.0076833,
+      "01/16/2017": 0.0076778,
+      "01/17/2017": 0.0076944,
+      "01/18/2017": 0.0077667,
+      "01/19/2017": 0.0077639,
+      "01/20/2017": 0.0077528,
+      "01/23/2017": 0.0077111,
+      "01/24/2017": 0.0077333,
+      "01/25/2017": 0.0077611,
+      "01/27/2017": 0.0077833,
+      "01/30/2017": 0.0078,
+      "01/31/2017": 0.0077944,
+      "02/01/2017": 0.0078,
+      "02/02/2017": 0.0077667,
+      "02/03/2017": 0.0077556,
+      "02/06/2017": 0.0077528,
+      "02/07/2017": 0.0077278,
+      "02/08/2017": 0.0077167,
+      "02/09/2017": 0.0077056,
+      "02/10/2017": 0.0077111,
+      "02/13/2017": 0.0077,
+      "02/15/2017": 0.0077222,
+      "02/16/2017": 0.0078056,
+      "02/17/2017": 0.0077944,
+      "02/20/2017": 0.0077722,
+      "02/21/2017": 0.0077944,
+      "02/23/2017": 0.0077833,
+      "02/24/2017": 0.0078056,
+      "02/27/2017": 0.0078444,
+      "02/28/2017": 0.0078889,
+      "03/01/2017": 0.0081056,
+      "03/02/2017": 0.0083,
+      "03/03/2017": 0.0083444,
+      "03/06/2017": 0.0084667,
+      "03/07/2017": 0.0085444,
+      "03/08/2017": 0.0085778,
+      "03/09/2017": 0.0088139,
+      "03/10/2017": 0.0089056,
+      "03/13/2017": 0.0091222,
+      "03/14/2017": 0.0092833,
+      "03/15/2017": 0.0094278,
+      "03/16/2017": 0.0097833,
+      "03/17/2017": 0.0097611,
+      "03/20/2017": 0.0097722,
+      "03/22/2017": 0.0098389,
+      "03/23/2017": 0.0098167,
+      "03/24/2017": 0.0098278,
+      "03/27/2017": 0.0098222,
+      "03/30/2017": 0.0098278,
+      "04/03/2017": 0.0098333,
+      "04/04/2017": 0.0098611,
+      "04/05/2017": 0.0098556,
+      "04/07/2017": 0.0099,
+      "04/10/2017": 0.0098833,
+      "04/11/2017": 0.0099,
+      "04/12/2017": 0.0099389,
+      "04/13/2017": 0.0099444,
+      "04/18/2017": 0.0099278,
+      "04/19/2017": 0.0099111,
+      "04/20/2017": 0.0098833,
+      "04/21/2017": 0.0099056,
+      "04/24/2017": 0.0099111,
+      "04/25/2017": 0.0099222,
+      "04/26/2017": 0.0099278,
+      "04/27/2017": 0.00995,
+      "05/02/2017": 0.0099278,
+      "05/03/2017": 0.0099167,
+      "05/04/2017": 0.0099278,
+      "05/05/2017": 0.0099444,
+      "05/08/2017": 0.0099411,
+      "05/09/2017": 0.0098856,
+      "05/11/2017": 0.0098911,
+      "05/12/2017": 0.0099244,
+      "05/15/2017": 0.0100078,
+      "05/16/2017": 0.0099911,
+      "05/17/2017": 0.0100356,
+      "05/18/2017": 0.0100994,
+      "05/19/2017": 0.0101711,
+      "05/22/2017": 0.0102939,
+      "05/23/2017": 0.0102356,
+      "05/24/2017": 0.0103272,
+      "05/25/2017": 0.0104383,
+      "05/26/2017": 0.0104467,
+      "05/30/2017": 0.010505,
+      "05/31/2017": 0.0106033,
+      "06/01/2017": 0.0107589,
+      "06/02/2017": 0.0108617,
+      "06/05/2017": 0.0108422,
+      "06/06/2017": 0.0108867,
+      "06/07/2017": 0.01096,
+      "06/08/2017": 0.0111711,
+      "06/09/2017": 0.0112711,
+      "06/12/2017": 0.0113933,
+      "06/13/2017": 0.0115889,
+      "06/14/2017": 0.0117167,
+      "06/15/2017": 0.0120944,
+      "06/16/2017": 0.0121222,
+      "06/19/2017": 0.0121389,
+      "06/20/2017": 0.0121556,
+      "06/22/2017": 0.0121611,
+      "06/23/2017": 0.0122,
+      "06/26/2017": 0.0122211,
+      "06/27/2017": 0.0122378,
+      "06/28/2017": 0.0122611,
+      "06/29/2017": 0.0122722,
+      "06/30/2017": 0.0122389,
+      "07/03/2017": 0.0122689,
+      "07/04/2017": 0.0122333,
+      "07/07/2017": 0.0122633,
+      "07/10/2017": 0.0122389,
+      "07/12/2017": 0.0122444,
+      "07/13/2017": 0.0122556,
+      "07/14/2017": 0.0122611,
+      "07/17/2017": 0.0122833,
+      "07/18/2017": 0.0122778,
+      "07/19/2017": 0.0122889,
+      "07/20/2017": 0.0122722,
+      "07/21/2017": 0.0123222,
+      "07/24/2017": 0.0123278,
+      "07/26/2017": 0.0123333,
+      "07/27/2017": 0.0123389,
+      "07/28/2017": 0.0123167,
+      "08/02/2017": 0.0123056,
+      "08/04/2017": 0.0122889,
+      "08/08/2017": 0.0123056,
+      "08/09/2017": 0.0122889,
+      "08/11/2017": 0.0122667,
+      "08/14/2017": 0.0122778,
+      "08/15/2017": 0.0122833,
+      "08/17/2017": 0.0123056,
+      "08/18/2017": 0.01235,
+      "08/21/2017": 0.0123556,
+      "08/22/2017": 0.0123611,
+      "08/23/2017": 0.0123444,
+      "08/24/2017": 0.0123389,
+      "08/25/2017": 0.0123556,
+      "08/29/2017": 0.0123889,
+      "08/30/2017": 0.0123722,
+      "08/31/2017": 0.0123167,
+      "09/01/2017": 0.0123056,
+      "09/04/2017": 0.0123167,
+      "09/05/2017": 0.0123111,
+      "09/06/2017": 0.0123222,
+      "09/07/2017": 0.01235,
+      "09/08/2017": 0.0123611,
+      "09/12/2017": 0.0123667,
+      "09/13/2017": 0.0123444,
+      "09/15/2017": 0.0123722,
+      "09/18/2017": 0.0123611,
+      "09/19/2017": 0.0123722,
+      "09/20/2017": 0.0123556,
+      "09/21/2017": 0.0123722,
+      "09/22/2017": 0.0123833,
+      "09/25/2017": 0.0123667,
+      "09/26/2017": 0.0123444,
+      "09/27/2017": 0.01235,
+      "09/29/2017": 0.0123222,
+      "10/02/2017": 0.0123333,
+      "10/03/2017": 0.0123778,
+      "10/06/2017": 0.01235,
+      "10/09/2017": 0.0123722,
+      "10/10/2017": 0.0123778,
+      "10/11/2017": 0.0123889,
+      "10/13/2017": 0.0123667,
+      "10/16/2017": 0.0123666,
+      "10/17/2017": 0.0123777,
+      "10/18/2017": 0.0123888,
+      "10/20/2017": 0.0123788,
+      "10/24/2017": 0.0123955,
+      "10/25/2017": 0.0123999,
+      "10/26/2017": 0.0124166,
+      "10/27/2017": 0.0124233,
+      "10/30/2017": 0.0124214,
+      "10/31/2017": 0.0124333,
+      "11/02/2017": 0.0124212,
+      "11/03/2017": 0.0124322,
+      "11/06/2017": 0.0124424,
+      "11/07/2017": 0.0124389,
+      "11/08/2017": 0.0124606,
+      "11/09/2017": 0.0124494,
+      "11/10/2017": 0.0124606,
+      "11/13/2017": 0.0125028,
+      "11/14/2017": 0.012635,
+      "11/15/2017": 0.01266,
+      "11/16/2017": 0.0128267,
+      "11/17/2017": 0.0128719,
+      "11/20/2017": 0.0129418,
+      "11/21/2017": 0.0131287,
+      "11/22/2017": 0.013275,
+      "11/23/2017": 0.0132862,
+      "11/24/2017": 0.0133756,
+      "11/27/2017": 0.0134676,
+      "11/28/2017": 0.0134978,
+      "11/29/2017": 0.0136069,
+      "11/30/2017": 0.0137188,
+      "12/01/2017": 0.0137938,
+      "12/04/2017": 0.0139181,
+      "12/05/2017": 0.0140319,
+      "12/06/2017": 0.0140688,
+      "12/08/2017": 0.0144438,
+      "12/11/2017": 0.0145951,
+      "12/12/2017": 0.0147195,
+      "12/13/2017": 0.0147703,
+      "12/14/2017": 0.0149078,
+      "12/15/2017": 0.01495,
+      "12/18/2017": 0.0150113,
+      "12/19/2017": 0.0151113,
+      "12/20/2017": 0.0153488,
+      "12/21/2017": 0.0155213,
+      "12/22/2017": 0.0156375,
+      "12/27/2017": 0.01569,
+      "12/28/2017": 0.0156775,
+      "12/29/2017": 0.0156425,
+      "01/02/2018": 0.0156175,
+      "01/03/2018": 0.0155688,
+      "01/04/2018": 0.01555,
+      "01/05/2018": 0.015525,
+      "01/08/2018": 0.0155375,
+      "01/11/2018": 0.0155945,
+      "01/12/2018": 0.0155947,
+      "01/15/2018": 0.0155614,
+      "01/16/2018": 0.0155613,
+      "01/17/2018": 0.015575,
+      "01/18/2018": 0.0156118,
+      "01/19/2018": 0.0156128,
+      "01/22/2018": 0.0156014,
+      "01/23/2018": 0.0156135,
+      "01/24/2018": 0.0156137,
+      "01/25/2018": 0.0156693,
+      "01/26/2018": 0.0156777,
+      "01/29/2018": 0.0157345,
+      "01/30/2018": 0.015747,
+      "01/31/2018": 0.015797,
+      "02/01/2018": 0.0157946,
+      "02/02/2018": 0.0157957,
+      "02/05/2018": 0.0158007,
+      "02/06/2018": 0.0157926,
+      "02/07/2018": 0.0157932,
+      "02/08/2018": 0.0158077,
+      "02/09/2018": 0.015832,
+      "02/11/2018": 0.0158007,
+      "02/13/2018": 0.015875,
+      "02/14/2018": 0.0158813,
+      "02/15/2018": 0.0159,
+      "02/16/2018": 0.0159375,
+      "02/19/2018": 0.0159563,
+      "02/21/2018": 0.0160251,
+      "02/22/2018": 0.016207,
+      "02/23/2018": 0.016312,
+      "02/26/2018": 0.01648,
+      "02/27/2018": 0.0166418,
+      "02/28/2018": 0.0167007,
+      "03/01/2018": 0.016862,
+      "03/02/2018": 0.016905,
+      "03/05/2018": 0.017017,
+      "03/06/2018": 0.0171131,
+      "03/07/2018": 0.0171794,
+      "03/08/2018": 0.0173957,
+      "03/09/2018": 0.0175032,
+      "03/12/2018": 0.0176495,
+      "03/13/2018": 0.017766,
+      "03/14/2018": 0.0178638,
+      "03/15/2018": 0.018082,
+      "03/16/2018": 0.0182207,
+      "03/19/2018": 0.0184067,
+      "03/20/2018": 0.0185382,
+      "03/21/2018": 0.0186125,
+      "03/22/2018": 0.018715,
+      "03/23/2018": 0.01875,
+      "03/26/2018": 0.0187688,
+      "03/28/2018": 0.0188688,
+      "03/29/2018": 0.0188313,
+      "04/03/2018": 0.018775,
+      "04/04/2018": 0.0189063,
+      "04/06/2018": 0.0189713,
+      "04/10/2018": 0.0189438,
+      "04/11/2018": 0.0189563,
+      "04/12/2018": 0.0189688,
+      "04/13/2018": 0.018955,
+      "04/16/2018": 0.0189426,
+      "04/17/2018": 0.0189563,
+      "04/18/2018": 0.0189707,
+      "04/19/2018": 0.0189826,
+      "04/20/2018": 0.0189695,
+      "04/23/2018": 0.0189711,
+      "04/24/2018": 0.0189826,
+      "04/25/2018": 0.0189988,
+      "04/26/2018": 0.0190076,
+      "04/27/2018": 0.0190701,
+      "04/30/2018": 0.0190932,
+      "05/01/2018": 0.0190875,
+      "05/02/2018": 0.0191713,
+      "05/03/2018": 0.019227,
+      "05/04/2018": 0.019277,
+      "05/08/2018": 0.0192851,
+      "05/10/2018": 0.0191839,
+      "05/11/2018": 0.0191871,
+      "05/14/2018": 0.0193375,
+      "05/16/2018": 0.01935,
+      "05/17/2018": 0.0194775,
+      "05/18/2018": 0.0195275,
+      "05/21/2018": 0.0196125,
+      "05/22/2018": 0.0196538,
+      "05/23/2018": 0.0195969,
+      "05/24/2018": 0.0196827,
+      "05/25/2018": 0.0197563,
+      "05/29/2018": 0.0198031,
+      "05/30/2018": 0.0198246,
+      "05/31/2018": 0.020007,
+      "06/01/2018": 0.0200468,
+      "06/04/2018": 0.0201297,
+      "06/05/2018": 0.0202454,
+      "06/06/2018": 0.0202961,
+      "06/07/2018": 0.0204638,
+      "06/08/2018": 0.0204617,
+      "06/11/2018": 0.0204738,
+      "06/12/2018": 0.0205725,
+      "06/13/2018": 0.0207325,
+      "06/14/2018": 0.0208506,
+      "06/15/2018": 0.0208494,
+      "06/18/2018": 0.0208375,
+      "06/19/2018": 0.0208788,
+      "06/20/2018": 0.0208363,
+      "06/21/2018": 0.0209113,
+      "06/22/2018": 0.0209775,
+      "06/25/2018": 0.0210288,
+      "06/26/2018": 0.0210188,
+      "06/27/2018": 0.020935,
+      "06/28/2018": 0.0209213,
+      "06/29/2018": 0.0209025,
+      "07/02/2018": 0.0209994,
+      "07/03/2018": 0.0208588,
+      "07/04/2018": 0.0208725,
+      "07/05/2018": 0.0209713,
+      "07/06/2018": 0.0208625,
+      "07/09/2018": 0.020775,
+      "07/10/2018": 0.020665,
+      "07/11/2018": 0.0207425,
+      "07/12/2018": 0.0207163,
+      "07/13/2018": 0.0207325,
+      "07/16/2018": 0.020785,
+      "07/17/2018": 0.0208175,
+      "07/18/2018": 0.0208625,
+      "07/19/2018": 0.02081,
+      "07/20/2018": 0.02069,
+      "07/23/2018": 0.0206363,
+      "07/24/2018": 0.0207013,
+      "07/25/2018": 0.0207688,
+      "07/26/2018": 0.0207163,
+      "07/27/2018": 0.0207675,
+      "07/30/2018": 0.020815,
+      "07/31/2018": 0.0208138,
+      "08/01/2018": 0.0208213,
+      "08/02/2018": 0.0208019,
+      "08/03/2018": 0.0207931,
+      "08/06/2018": 0.0208256,
+      "08/07/2018": 0.0207113,
+      "08/08/2018": 0.0206345,
+      "08/09/2018": 0.0206731,
+      "08/10/2018": 0.0206675,
+      "08/13/2018": 0.0206269,
+      "08/14/2018": 0.020635,
+      "08/15/2018": 0.0206,
+      "08/16/2018": 0.0207738,
+      "08/17/2018": 0.0206938,
+      "08/20/2018": 0.02067,
+      "08/21/2018": 0.0206588,
+      "08/22/2018": 0.02066,
+      "08/23/2018": 0.0206475,
+      "08/24/2018": 0.0207275,
+      "08/28/2018": 0.0207488,
+      "08/29/2018": 0.0207588,
+      "08/30/2018": 0.0210375,
+      "08/31/2018": 0.0211375,
+      "09/03/2018": 0.021095,
+      "09/04/2018": 0.0212031,
+      "09/05/2018": 0.021205,
+      "09/06/2018": 0.0213256,
+      "09/07/2018": 0.02131,
+      "09/10/2018": 0.0213894,
+      "09/11/2018": 0.0214794,
+      "09/12/2018": 0.0213444,
+      "09/13/2018": 0.0215844,
+      "09/14/2018": 0.0216469,
+      "09/17/2018": 0.0216813,
+      "09/18/2018": 0.0216525,
+      "09/19/2018": 0.0218244,
+      "09/20/2018": 0.0221219,
+      "09/21/2018": 0.0221581,
+      "09/24/2018": 0.0221819,
+      "09/25/2018": 0.0223006,
+      "09/26/2018": 0.0224219,
+      "09/27/2018": 0.02256,
+      "09/28/2018": 0.0226056,
+      "10/01/2018": 0.0226513,
+      "10/02/2018": 0.0227394,
+      "10/03/2018": 0.0227925,
+      "10/04/2018": 0.0228063,
+      "10/05/2018": 0.0227669,
+      "10/08/2018": 0.0228406,
+      "10/09/2018": 0.0228713,
+      "10/10/2018": 0.0228319,
+      "10/11/2018": 0.022795,
+      "10/12/2018": 0.0227975,
+      "10/15/2018": 0.022895,
+      "10/16/2018": 0.0228713,
+      "10/17/2018": 0.02282,
+      "10/18/2018": 0.0227963,
+      "10/19/2018": 0.0228188,
+      "10/22/2018": 0.022865,
+      "10/23/2018": 0.0228138,
+      "10/24/2018": 0.0229406,
+      "10/25/2018": 0.0229494,
+      "10/26/2018": 0.0229669,
+      "10/29/2018": 0.02302,
+      "10/30/2018": 0.0229938,
+      "10/31/2018": 0.0230688,
+      "11/01/2018": 0.0231356,
+      "11/02/2018": 0.0231788,
+      "11/05/2018": 0.02316,
+      "11/06/2018": 0.0231688,
+      "11/07/2018": 0.0231531,
+      "11/08/2018": 0.0231844,
+      "11/09/2018": 0.0231438,
+      "11/12/2018": 0.0230663,
+      "11/13/2018": 0.023065,
+      "11/14/2018": 0.0231038,
+      "11/15/2018": 0.023025,
+      "11/16/2018": 0.0230088,
+      "11/19/2018": 0.0230025,
+      "11/20/2018": 0.023055,
+      "11/21/2018": 0.0231513,
+      "11/22/2018": 0.0231488,
+      "11/23/2018": 0.0232188,
+      "11/26/2018": 0.0233675,
+      "11/27/2018": 0.0234931,
+      "11/28/2018": 0.0234463,
+      "11/29/2018": 0.0234925,
+      "11/30/2018": 0.0234694,
+      "12/03/2018": 0.0237888,
+      "12/04/2018": 0.023795,
+      "12/05/2018": 0.0238325,
+      "12/06/2018": 0.0238694,
+      "12/07/2018": 0.0240019,
+      "12/10/2018": 0.024205,
+      "12/11/2018": 0.0243238,
+      "12/12/2018": 0.0244013,
+      "12/13/2018": 0.0245513,
+      "12/14/2018": 0.02455,
+      "12/17/2018": 0.0246963,
+      "12/18/2018": 0.0247013,
+      "12/19/2018": 0.0247938,
+      "12/20/2018": 0.0250375,
+      "12/21/2018": 0.0250625,
+      "12/24/2018": 0.0250563,
+      "12/27/2018": 0.0252238,
+      "12/28/2018": 0.0251988,
+      "12/31/2018": 0.0250269,
+      "01/02/2019": 0.0250713,
+      "01/03/2019": 0.0251275,
+      "01/04/2019": 0.0252056,
+      "01/07/2019": 0.0251113,
+      "01/08/2019": 0.025155,
+      "01/09/2019": 0.0251875,
+      "01/10/2019": 0.0251419,
+      "01/11/2019": 0.0250894,
+      "01/14/2019": 0.0251006,
+      "01/15/2019": 0.025075,
+      "01/16/2019": 0.0251325,
+      "01/17/2019": 0.02503,
+      "01/18/2019": 0.02506,
+      "01/21/2019": 0.0251225,
+      "01/22/2019": 0.02519,
+      "01/23/2019": 0.0251,
+      "01/24/2019": 0.0250188,
+      "01/25/2019": 0.025,
+      "01/28/2019": 0.0250175,
+      "01/29/2019": 0.0249888,
+      "01/30/2019": 0.0250913,
+      "01/31/2019": 0.0251375,
+      "02/01/2019": 0.02514,
+      "02/04/2019": 0.0251313,
+      "02/05/2019": 0.0251225,
+      "02/06/2019": 0.0251263,
+      "02/07/2019": 0.0251688,
+      "02/08/2019": 0.0250413,
+      "02/11/2019": 0.0249788,
+      "02/12/2019": 0.0249375,
+      "02/13/2019": 0.0248875,
+      "02/14/2019": 0.0248138,
+      "02/15/2019": 0.0248038,
+      "02/18/2019": 0.0248475,
+      "02/19/2019": 0.0248225,
+      "02/20/2019": 0.0248113,
+      "02/21/2019": 0.0248988,
+      "02/22/2019": 0.0248438,
+      "02/25/2019": 0.0247913,
+      "02/26/2019": 0.02493,
+      "02/27/2019": 0.0248925,
+      "02/28/2019": 0.0249038,
+      "03/01/2019": 0.0248188,
+      "03/04/2019": 0.02483,
+      "03/05/2019": 0.0248088,
+      "03/06/2019": 0.0249175,
+      "03/07/2019": 0.0249275,
+      "03/08/2019": 0.024915,
+      "03/11/2019": 0.0249888,
+      "03/12/2019": 0.0248863,
+      "03/13/2019": 0.0248375,
+      "03/14/2019": 0.0248175,
+      "03/18/2019": 0.0248775,
+      "03/19/2019": 0.0248675,
+      "03/20/2019": 0.0249063,
+      "03/21/2019": 0.024855,
+      "03/22/2019": 0.0249888,
+      "03/25/2019": 0.0248975,
+      "03/26/2019": 0.024955,
+      "03/27/2019": 0.0249863,
+      "03/28/2019": 0.025015,
+      "03/29/2019": 0.024945,
+      "04/01/2019": 0.0249338,
+      "04/02/2019": 0.0247938,
+      "04/03/2019": 0.0247713,
+      "04/04/2019": 0.024735,
+      "04/05/2019": 0.0247163,
+      "04/08/2019": 0.0248125,
+      "04/09/2019": 0.02484,
+      "04/10/2019": 0.02482,
+      "04/11/2019": 0.0247263,
+      "04/12/2019": 0.0247738,
+      "04/15/2019": 0.0247388,
+      "04/16/2019": 0.0247975,
+      "04/17/2019": 0.0248738,
+      "04/18/2019": 0.0248088,
+      "04/23/2019": 0.0247663,
+      "04/24/2019": 0.0248338,
+      "04/25/2019": 0.024785,
+      "04/26/2019": 0.0248313,
+      "04/29/2019": 0.0248588,
+      "04/30/2019": 0.024805,
+      "05/01/2019": 0.0248325,
+      "05/02/2019": 0.0246713,
+      "05/03/2019": 0.0246663,
+      "05/07/2019": 0.0246275,
+      "05/08/2019": 0.0245138,
+      "05/09/2019": 0.0245338,
+      "05/10/2019": 0.02449,
+      "05/13/2019": 0.0243963,
+      "05/14/2019": 0.0243763,
+      "05/15/2019": 0.0243238,
+      "05/16/2019": 0.0244063,
+      "05/17/2019": 0.0244188,
+      "05/20/2019": 0.02436,
+      "05/21/2019": 0.0242963,
+      "05/22/2019": 0.02437,
+      "05/23/2019": 0.0242975,
+      "05/24/2019": 0.0242813,
+      "05/28/2019": 0.0242938,
+      "05/29/2019": 0.024385,
+      "05/30/2019": 0.0244,
+      "05/31/2019": 0.024305,
+      "06/03/2019": 0.0242988,
+      "06/04/2019": 0.0242088,
+      "06/05/2019": 0.024185,
+      "06/06/2019": 0.0241163,
+      "06/07/2019": 0.0241213,
+      "06/10/2019": 0.0241338,
+      "06/11/2019": 0.0241063,
+      "06/12/2019": 0.0240113,
+      "06/13/2019": 0.0239425,
+      "06/14/2019": 0.0238175,
+      "06/17/2019": 0.0239025,
+      "06/18/2019": 0.0238288,
+      "06/19/2019": 0.0238338,
+      "06/20/2019": 0.0240363,
+      "06/21/2019": 0.0240438,
+      "06/24/2019": 0.0240175,
+      "06/25/2019": 0.0240413,
+      "06/26/2019": 0.0240238,
+      "06/28/2019": 0.02398,
+      "07/01/2019": 0.0238775,
+      "07/02/2019": 0.023795,
+      "07/03/2019": 0.0236,
+      "07/04/2019": 0.0236413,
+      "07/05/2019": 0.023665,
+      "07/08/2019": 0.0237938,
+      "07/09/2019": 0.0236863,
+      "07/10/2019": 0.0236913,
+      "07/11/2019": 0.02325,
+      "07/12/2019": 0.02332,
+      "07/15/2019": 0.0231413,
+      "07/16/2019": 0.0230038,
+      "07/17/2019": 0.0229788,
+      "07/18/2019": 0.022715,
+      "07/19/2019": 0.0226113,
+      "07/22/2019": 0.0226913,
+      "07/23/2019": 0.02266,
+      "07/24/2019": 0.0226175,
+      "07/25/2019": 0.0224113,
+      "07/26/2019": 0.02237,
+      "07/29/2019": 0.0223438,
+      "07/30/2019": 0.0222975,
+      "07/31/2019": 0.0222425,
+      "08/01/2019": 0.0224413,
+      "08/02/2019": 0.022285,
+      "08/05/2019": 0.02223,
+      "08/06/2019": 0.0221275,
+      "08/07/2019": 0.0221125,
+      "08/08/2019": 0.0220088,
+      "08/09/2019": 0.0219425,
+      "08/12/2019": 0.0219525,
+      "08/13/2019": 0.0219513,
+      "08/14/2019": 0.0219738,
+      "08/15/2019": 0.02182,
+      "08/16/2019": 0.0217213,
+      "08/19/2019": 0.0216863,
+      "08/20/2019": 0.0217,
+      "08/21/2019": 0.0216663,
+      "08/22/2019": 0.0214525,
+      "08/23/2019": 0.021395,
+      "08/27/2019": 0.0211588,
+      "08/28/2019": 0.02112,
+      "08/29/2019": 0.0210025,
+      "08/30/2019": 0.02089,
+      "09/02/2019": 0.0208188,
+      "09/03/2019": 0.0206688,
+      "09/04/2019": 0.0205725,
+      "09/05/2019": 0.0204213,
+      "09/06/2019": 0.02049,
+      "09/09/2019": 0.020495,
+      "09/10/2019": 0.0203863,
+      "09/11/2019": 0.0203588,
+      "09/12/2019": 0.020275,
+      "09/13/2019": 0.0202475,
+      "09/16/2019": 0.0204088,
+      "09/17/2019": 0.02057,
+      "09/18/2019": 0.0204425,
+      "09/19/2019": 0.0204588,
+      "09/20/2019": 0.020365,
+      "09/23/2019": 0.0201838,
+      "09/24/2019": 0.0204588,
+      "09/25/2019": 0.0205363,
+      "09/26/2019": 0.020435,
+      "09/27/2019": 0.020315,
+      "09/30/2019": 0.0201563,
+      "10/01/2019": 0.0201088,
+      "10/02/2019": 0.0199725,
+      "10/03/2019": 0.019895,
+      "10/04/2019": 0.01978,
+      "10/07/2019": 0.0194025,
+      "10/08/2019": 0.0193875,
+      "10/09/2019": 0.0192738,
+      "10/10/2019": 0.0192125,
+      "10/11/2019": 0.019135,
+      "10/14/2019": 0.0189075,
+      "10/15/2019": 0.0188913,
+      "10/16/2019": 0.018775,
+      "10/17/2019": 0.0184638,
+      "10/18/2019": 0.0185025,
+      "10/21/2019": 0.01823,
+      "10/22/2019": 0.0182175,
+      "10/23/2019": 0.0182275,
+      "10/24/2019": 0.0180425,
+      "10/25/2019": 0.0180488,
+      "10/28/2019": 0.0179963,
+      "10/29/2019": 0.0178588,
+      "10/30/2019": 0.0178138,
+      "10/31/2019": 0.0178488,
+      "11/01/2019": 0.0177425,
+      "11/04/2019": 0.01771,
+      "11/05/2019": 0.0176988,
+      "11/06/2019": 0.01755,
+      "11/07/2019": 0.01758,
+      "11/08/2019": 0.01759,
+      "11/11/2019": 0.0176325,
+      "11/12/2019": 0.0176163,
+      "11/13/2019": 0.0176538,
+      "11/14/2019": 0.017625,
+      "11/15/2019": 0.0173325,
+      "11/18/2019": 0.0172363,
+      "11/19/2019": 0.0172163,
+      "11/20/2019": 0.0171563,
+      "11/21/2019": 0.01708,
+      "11/22/2019": 0.0170275,
+      "11/25/2019": 0.016995,
+      "11/26/2019": 0.0170163,
+      "11/27/2019": 0.0169113,
+      "11/28/2019": 0.017085,
+      "11/29/2019": 0.0169713,
+      "12/02/2019": 0.0169375,
+      "12/03/2019": 0.0170363,
+      "12/04/2019": 0.0171313,
+      "12/05/2019": 0.0171013,
+      "12/06/2019": 0.0171513,
+      "12/09/2019": 0.0171763,
+      "12/10/2019": 0.0173563,
+      "12/11/2019": 0.017405,
+      "12/12/2019": 0.0173975,
+      "12/13/2019": 0.0173738,
+      "12/16/2019": 0.0174488,
+      "12/17/2019": 0.0176388,
+      "12/18/2019": 0.0176463,
+      "12/19/2019": 0.0178513,
+      "12/20/2019": 0.0177988,
+      "12/23/2019": 0.01792,
+      "12/24/2019": 0.0180475,
+      "12/27/2019": 0.0179938,
+      "12/30/2019": 0.0178088,
+      "12/31/2019": 0.017625,
+      "01/02/2020": 0.0173438,
+      "01/03/2020": 0.0171425,
+      "01/06/2020": 0.0169213,
+      "01/07/2020": 0.01699,
+      "01/08/2020": 0.0167713,
+      "01/09/2020": 0.0168363,
+      "01/10/2020": 0.0167663,
+      "01/13/2020": 0.0167625,
+      "01/14/2020": 0.0166963,
+      "01/15/2020": 0.01669,
+      "01/16/2020": 0.0165775,
+      "01/17/2020": 0.0165438,
+      "01/20/2020": 0.0165338,
+      "01/21/2020": 0.016595,
+      "01/22/2020": 0.0165938,
+      "01/23/2020": 0.0166088,
+      "01/24/2020": 0.016595,
+      "01/27/2020": 0.0164925,
+      "01/28/2020": 0.0165,
+      "01/29/2020": 0.0164525,
+      "01/30/2020": 0.01655,
+      "01/31/2020": 0.0166188,
+      "02/03/2020": 0.0166775,
+      "02/04/2020": 0.0166625,
+      "02/05/2020": 0.0166963,
+      "02/06/2020": 0.0167088,
+      "02/07/2020": 0.0166525,
+      "02/10/2020": 0.0165788,
+      "02/11/2020": 0.0165275,
+      "02/12/2020": 0.0165013,
+      "02/13/2020": 0.016585,
+      "02/14/2020": 0.0165825,
+      "02/17/2020": 0.0164675,
+      "02/18/2020": 0.01647,
+      "02/19/2020": 0.0163938,
+      "02/20/2020": 0.0162888,
+      "02/21/2020": 0.0162675,
+      "02/24/2020": 0.0161613,
+      "02/25/2020": 0.0161263,
+      "02/26/2020": 0.0160338,
+      "02/27/2020": 0.0158113,
+      "02/28/2020": 0.0151525,
+      "03/02/2020": 0.0135575,
+      "03/03/2020": 0.0137675,
+      "03/04/2020": 0.0101625,
+      "03/05/2020": 0.0100513,
+      "03/06/2020": 0.0086263,
+      "03/09/2020": 0.0072488,
+      "03/10/2020": 0.0081138,
+      "03/11/2020": 0.0079663,
+      "03/12/2020": 0.0070463,
+      "03/13/2020": 0.0080013,
+      "03/16/2020": 0.0061163,
+      "03/17/2020": 0.0075,
+      "03/18/2020": 0.0077288,
+      "03/19/2020": 0.0092363,
+      "03/20/2020": 0.009285,
+      "03/23/2020": 0.0094663,
+      "03/24/2020": 0.0092488,
+      "03/25/2020": 0.0095913,
+      "03/26/2020": 0.0094088,
+      "03/27/2020": 0.0098938,
+      "03/30/2020": 0.009845,
+      "03/31/2020": 0.0099288,
+      "04/01/2020": 0.0101625,
+      "04/02/2020": 0.0098163,
+      "04/03/2020": 0.0098513,
+      "04/06/2020": 0.0092125,
+      "04/07/2020": 0.008635,
+      "04/08/2020": 0.0082888,
+      "04/09/2020": 0.00814,
+      "04/14/2020": 0.0079413,
+      "04/15/2020": 0.0075075,
+      "04/16/2020": 0.0071825,
+      "04/17/2020": 0.0067275,
+      "04/20/2020": 0.0066738,
+      "04/21/2020": 0.0062463,
+      "04/22/2020": 0.0056975,
+      "04/23/2020": 0.0048725,
+      "04/24/2020": 0.0044088,
+      "04/27/2020": 0.0043763,
+      "04/28/2020": 0.0040363,
+      "04/29/2020": 0.0037013,
+      "04/30/2020": 0.0032963,
+      "05/01/2020": 0.0030338,
+      "05/04/2020": 0.0026275,
+      "05/05/2020": 0.0024725,
+      "05/06/2020": 0.0022163,
+      "05/08/2020": 0.00198,
+      "05/11/2020": 0.0019088,
+      "05/12/2020": 0.0018388,
+      "05/13/2020": 0.0018363,
+      "05/14/2020": 0.0018213,
+      "05/15/2020": 0.0017238,
+      "05/18/2020": 0.0017075,
+      "05/19/2020": 0.0017088,
+      "05/20/2020": 0.00173,
+      "05/21/2020": 0.0016825,
+      "05/22/2020": 0.0017375,
+      "05/26/2020": 0.001695,
+      "05/27/2020": 0.0017363,
+      "05/28/2020": 0.0017263,
+      "05/29/2020": 0.001825,
+      "06/01/2020": 0.0017813,
+      "06/02/2020": 0.0017875,
+      "06/03/2020": 0.0017363,
+      "06/04/2020": 0.0017525,
+      "06/05/2020": 0.0018013,
+      "06/08/2020": 0.0017663,
+      "06/09/2020": 0.0018788,
+      "06/10/2020": 0.001905,
+      "06/11/2020": 0.0018475,
+      "06/12/2020": 0.0019513,
+      "06/15/2020": 0.0019388,
+      "06/16/2020": 0.0019375,
+      "06/17/2020": 0.0019388,
+      "06/18/2020": 0.0019,
+      "06/19/2020": 0.0019013,
+      "06/22/2020": 0.0018475,
+      "06/23/2020": 0.001845,
+      "06/24/2020": 0.001795,
+      "06/25/2020": 0.0018363,
+      "06/26/2020": 0.0017825,
+      "06/29/2020": 0.00171,
+      "06/30/2020": 0.0016225,
+      "07/01/2020": 0.0016625,
+      "07/02/2020": 0.0016375,
+      "07/03/2020": 0.0016263,
+      "07/06/2020": 0.0016588,
+      "07/07/2020": 0.001825,
+      "07/08/2020": 0.0018825,
+      "07/09/2020": 0.0017825,
+      "07/10/2020": 0.0017538,
+      "07/13/2020": 0.0017475,
+      "07/14/2020": 0.0017663,
+      "07/15/2020": 0.0018088,
+      "07/16/2020": 0.0018675,
+      "07/17/2020": 0.0017988,
+      "07/20/2020": 0.0017563,
+      "07/21/2020": 0.0017575,
+      "07/22/2020": 0.00179,
+      "07/23/2020": 0.0017163,
+      "07/24/2020": 0.0017263,
+      "07/27/2020": 0.0016625,
+      "07/28/2020": 0.0016688,
+      "07/29/2020": 0.0016113,
+      "07/30/2020": 0.0015563,
+      "07/31/2020": 0.0015488,
+      "08/03/2020": 0.00157,
+      "08/04/2020": 0.0014925,
+      "08/05/2020": 0.001535,
+      "08/06/2020": 0.0015538,
+      "08/07/2020": 0.0016338,
+      "08/10/2020": 0.0016825,
+      "08/11/2020": 0.0016413,
+      "08/12/2020": 0.00158,
+      "08/13/2020": 0.0016188,
+      "08/14/2020": 0.001515,
+      "08/17/2020": 0.0016138,
+      "08/18/2020": 0.00158,
+      "08/19/2020": 0.0017088,
+      "08/20/2020": 0.0018325,
+      "08/21/2020": 0.0017513,
+      "08/24/2020": 0.0017425,
+      "08/25/2020": 0.0017025,
+      "08/26/2020": 0.0015638,
+      "08/27/2020": 0.0015513,
+      "08/28/2020": 0.0015675,
+      "09/01/2020": 0.0015563,
+      "09/02/2020": 0.0015475,
+      "09/03/2020": 0.0015863,
+      "09/04/2020": 0.0015425,
+      "09/07/2020": 0.0015563,
+      "09/08/2020": 0.001555,
+      "09/09/2020": 0.0015125,
+      "09/10/2020": 0.0015113,
+      "09/11/2020": 0.0015238,
+      "09/14/2020": 0.0015213,
+      "09/15/2020": 0.001505,
+      "09/16/2020": 0.0015,
+      "09/17/2020": 0.0015625,
+      "09/18/2020": 0.0015575,
+      "09/21/2020": 0.0015188,
+      "09/22/2020": 0.0015113,
+      "09/23/2020": 0.0014813,
+      "09/24/2020": 0.0014475,
+      "09/25/2020": 0.0014613,
+      "09/28/2020": 0.0014663,
+      "09/29/2020": 0.00149,
+      "09/30/2020": 0.0014825,
+      "10/01/2020": 0.001395,
+      "10/02/2020": 0.0014,
+      "10/05/2020": 0.0014275,
+      "10/06/2020": 0.0013963,
+      "10/07/2020": 0.00147,
+      "10/08/2020": 0.0014688,
+      "10/09/2020": 0.0014525,
+      "10/12/2020": 0.0014425,
+      "10/13/2020": 0.0014838,
+      "10/14/2020": 0.0014575,
+      "10/15/2020": 0.0014725,
+      "10/16/2020": 0.0015138,
+      "10/19/2020": 0.0014338,
+      "10/20/2020": 0.0014575,
+      "10/21/2020": 0.0014788,
+      "10/22/2020": 0.0014925,
+      "10/23/2020": 0.0015625,
+      "10/26/2020": 0.001515,
+      "10/27/2020": 0.0014463,
+      "10/28/2020": 0.0014775,
+      "10/29/2020": 0.0014913,
+      "10/30/2020": 0.0014025,
+      "11/02/2020": 0.001405,
+      "11/03/2020": 0.0013763,
+      "11/04/2020": 0.0013613,
+      "11/05/2020": 0.0012663,
+      "11/06/2020": 0.0012775,
+      "11/09/2020": 0.0012988,
+      "11/10/2020": 0.0014013,
+      "11/11/2020": 0.0014138,
+      "11/12/2020": 0.0014088,
+      "11/13/2020": 0.0013638,
+      "11/16/2020": 0.001435,
+      "11/17/2020": 0.001495,
+      "11/18/2020": 0.001465,
+      "11/19/2020": 0.001455,
+      "11/20/2020": 0.0015013,
+      "11/24/2020": 0.00143,
+      "11/25/2020": 0.001455,
+      "11/26/2020": 0.0014675,
+      "11/27/2020": 0.0015475,
+      "11/30/2020": 0.0015338,
+      "12/01/2020": 0.0014763,
+      "12/02/2020": 0.0015213,
+      "12/03/2020": 0.0015275,
+      "12/04/2020": 0.0015175,
+      "12/07/2020": 0.0014575,
+      "12/08/2020": 0.0014875,
+      "12/09/2020": 0.0014788,
+      "12/10/2020": 0.0015388,
+      "12/11/2020": 0.0015863,
+      "12/14/2020": 0.0015313,
+      "12/15/2020": 0.001525,
+      "12/16/2020": 0.0015788,
+      "12/17/2020": 0.0015163,
+      "12/18/2020": 0.0014375,
+      "12/21/2020": 0.0014525,
+      "12/22/2020": 0.0014325,
+      "12/23/2020": 0.00148,
+      "12/24/2020": 0.0014513,
+      "12/29/2020": 0.0014675,
+      "12/30/2020": 0.00144,
+      "12/31/2020": 0.0014388,
+      "01/04/2021": 0.0013975,
+      "01/05/2021": 0.0013088,
+      "01/06/2021": 0.00132,
+      "01/07/2021": 0.0013263,
+      "01/08/2021": 0.0012638,
+      "01/11/2021": 0.00126,
+      "01/12/2021": 0.0012725,
+      "01/13/2021": 0.001265,
+      "01/14/2021": 0.0012888,
+      "01/15/2021": 0.001295,
+      "01/18/2021": 0.0013088,
+      "01/19/2021": 0.001295,
+      "01/20/2021": 0.001285,
+      "01/21/2021": 0.0013,
+      "01/22/2021": 0.0012475,
+      "01/25/2021": 0.001275,
+      "01/26/2021": 0.001225,
+      "01/27/2021": 0.0012075,
+      "01/28/2021": 0.0012288,
+      "01/29/2021": 0.001195,
+      "02/01/2021": 0.00113,
+      "02/02/2021": 0.0011525,
+      "02/03/2021": 0.0011325,
+      "02/04/2021": 0.001235,
+      "02/05/2021": 0.0011888,
+      "02/08/2021": 0.001205,
+      "02/09/2021": 0.0011588,
+      "02/10/2021": 0.001095,
+      "02/11/2021": 0.0011225,
+      "02/12/2021": 0.0010738,
+      "02/15/2021": 0.0010575,
+      "02/16/2021": 0.0010825,
+      "02/17/2021": 0.00111,
+      "02/18/2021": 0.0011113,
+      "02/19/2021": 0.001155,
+      "02/22/2021": 0.0011488,
+      "02/23/2021": 0.0011763,
+      "02/24/2021": 0.001145,
+      "02/25/2021": 0.0011513,
+      "02/26/2021": 0.001185,
+      "03/01/2021": 0.0010925,
+      "03/02/2021": 0.0010838,
+      "03/03/2021": 0.00103,
+      "03/04/2021": 0.001035,
+      "03/05/2021": 0.0010325,
+      "03/08/2021": 0.00106,
+      "03/09/2021": 0.0010713,
+      "03/10/2021": 0.0010588,
+      "03/11/2021": 0.00106,
+      "03/12/2021": 0.0010613,
+      "03/15/2021": 0.001075,
+      "03/16/2021": 0.0010813,
+      "03/17/2021": 0.0011025,
+      "03/18/2021": 0.0011088,
+      "03/19/2021": 0.0010838,
+      "03/22/2021": 0.0010738,
+      "03/23/2021": 0.0010863,
+      "03/24/2021": 0.0011025,
+      "03/25/2021": 0.0010913,
+      "03/26/2021": 0.0010725,
+      "03/29/2021": 0.001085,
+      "03/30/2021": 0.0011513,
+      "03/31/2021": 0.0011113,
+      "04/01/2021": 0.0011038,
+      "04/06/2021": 0.0011013,
+      "04/07/2021": 0.001125,
+      "04/08/2021": 0.001105,
+      "04/09/2021": 0.0011125,
+      "04/12/2021": 0.0011225,
+      "04/13/2021": 0.0011463,
+      "04/14/2021": 0.0011563,
+      "04/15/2021": 0.00115,
+      "04/16/2021": 0.0011588,
+      "04/19/2021": 0.0011375,
+      "04/20/2021": 0.001075,
+      "04/21/2021": 0.0011025,
+      "04/22/2021": 0.0010613,
+      "04/23/2021": 0.00111,
+      "04/27/2021": 0.0011025,
+      "04/28/2021": 0.0011325,
+      "04/29/2021": 0.0011013,
+      "04/30/2021": 0.0010725,
+      "05/04/2021": 0.0010838,
+      "05/05/2021": 0.0010563,
+      "05/06/2021": 0.0009513,
+      "05/07/2021": 0.0010138,
+      "05/10/2021": 0.0009813,
+      "05/11/2021": 0.0009375,
+      "05/12/2021": 0.0009813,
+      "05/13/2021": 0.0010088,
+      "05/14/2021": 0.000975,
+      "05/18/2021": 0.0009925,
+      "05/19/2021": 0.000965,
+      "05/20/2021": 0.000925,
+      "05/21/2021": 0.0009163,
+      "05/24/2021": 0.00091,
+      "05/25/2021": 0.0009,
+      "05/26/2021": 0.000925,
+      "05/27/2021": 0.0009213,
+      "05/28/2021": 0.0008588,
+      "06/01/2021": 0.0008875,
+      "06/02/2021": 0.000855,
+      "06/03/2021": 0.0008,
+      "06/04/2021": 0.0008125,
+      "06/08/2021": 0.00077,
+      "06/09/2021": 0.0007463,
+      "06/10/2021": 0.0007263,
+      "06/11/2021": 0.0007288,
+      "06/14/2021": 0.0007463,
+      "06/15/2021": 0.0008175,
+      "06/16/2021": 0.000825,
+      "06/17/2021": 0.0009338,
+      "06/18/2021": 0.00091,
+      "06/21/2021": 0.0009588,
+      "06/22/2021": 0.0009075,
+      "06/23/2021": 0.000915,
+      "06/24/2021": 0.00095,
+      "06/25/2021": 0.0009613,
+      "06/28/2021": 0.0010425,
+      "06/29/2021": 0.0010025,
+      "06/30/2021": 0.001005,
+      "07/01/2021": 0.001025,
+      "07/02/2021": 0.0010288,
+      "07/05/2021": 0.0010413,
+      "07/06/2021": 0.0010213,
+      "07/07/2021": 0.0010288,
+      "07/08/2021": 0.0010038,
+      "07/09/2021": 0.0010013,
+      "07/12/2021": 0.0009575,
+      "07/13/2021": 0.0009313,
+      "07/14/2021": 0.0009113,
+      "07/15/2021": 0.0008913,
+      "07/16/2021": 0.0008363,
+      "07/19/2021": 0.0008525,
+      "07/20/2021": 0.00089,
+      "07/21/2021": 0.0008663,
+      "07/22/2021": 0.0008925,
+      "07/23/2021": 0.0008613,
+      "07/26/2021": 0.0008725,
+      "07/27/2021": 0.0009013,
+      "07/28/2021": 0.00092,
+      "07/30/2021": 0.000905
+    },
+    "calc_basis": true,
+    "calc_deffee_basis": true,
+    "calc_disc_basis": true,
+    "calc_capcosts_basis": true
+  }
+}

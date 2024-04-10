@@ -1,0 +1,297 @@
+﻿{
+  "SheetName": "Remit",
+  "LandingTableName": "IO.L_Remittance",
+  "ImportProcedureName": "usp_ImportIntoTranscationReconciliation",
+  "HeaderPosition": 8,
+  "Check2BlankRow": false,
+  "MappingColumns": [
+    {
+      "SheetColumnName": "Investor No",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "InvestorNo",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Note ID",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "NoteID",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "Y"
+    },
+    {
+      "SheetColumnName": "Borrower Name",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "BorrowerName",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Due Date",
+      "SheetColumnDataType": "System.DateTime",
+      "LandingColumnName": "DueDate",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "Y"
+    },
+    {
+      "SheetColumnName": "Loan No",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "LoanNo",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+
+    },
+    {
+      "SheetColumnName": "GROUP_NUMBER",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "GROUPNUMBER",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Next Pmt Due",
+      "SheetColumnDataType": "System.DateTime",
+      "LandingColumnName": "NextPmtDue",
+      "IsMandatory": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Beg Balance",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "BegBalance",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "P&I Due",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "PIDue",
+      "IsMandatory": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Principal",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "Principal",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "Y"
+    },
+    {
+      "SheetColumnName": "Interest",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "Interest",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "Y"
+    },
+    {
+      "SheetColumnName": "Interest Rate",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "InterestRate",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Service Fee Rate",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "ServiceFeeRate",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Net Yield",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "NetYield",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Service Fee",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "ServiceFee",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Net Interest",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "NetInterest",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Exit Fees",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "ExitFees",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Extension Fees",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "ExtensionFees",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Prepayment / YM Fees",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "PrepaymentYMFees",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Other Fees",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "OtherFees",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Add'l Principal",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "AddlPrincipal",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Fee Payback",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "FeePayback",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Add'l Int",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "AddlInt",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Float Int CR",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "FloatIntCR",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Total Remit",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "TotalRemit",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "Y"
+    },
+    {
+      "SheetColumnName": "Principal Adj (Non Cash)",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "PrincipalAdjNonCash",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Ending Balance",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "EndingBalance",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Tran Date",
+      "SheetColumnDataType": "System.DateTime",
+      "LandingColumnName": "TranDate",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "Y"
+    },
+    {
+      "SheetColumnName": "Accrual Days",
+      "SheetColumnDataType": "System.Int32",
+      "LandingColumnName": "AccrualDays",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Int Rate Type",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "IntRateType",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "NOTE_DATE",
+      "SheetColumnDataType": "System.DateTime",
+      "LandingColumnName": "NOTEDATE",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Maturity Date",
+      "SheetColumnDataType": "System.DateTime",
+      "LandingColumnName": "MaturityDate",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Comments",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "Comments",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "DIAL Beginning Balance",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "DIALBeginningBalance",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Current DIAL",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "CurrentDIAL",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Ending DIAL Balance",
+      "SheetColumnDataType": "System.Decimal",
+      "LandingColumnName": "EndingDIALBalance",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Remit Date",
+      "SheetColumnDataType": "System.Datetime",
+      "LandingColumnName": "RemitDate",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "Y"
+    },
+    {
+      "SheetColumnName": "LIBOR Index",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "LIBORIndex",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Rounded LIBOR",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "RoundedLIBOR",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Property Name",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "PropertyName",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    },
+    {
+      "SheetColumnName": "Spread",
+      "SheetColumnDataType": "System.String",
+      "LandingColumnName": "Spread",
+      "IsMandatoryColumn": "Y",
+      "IsMandatoryValue": "N"
+    }
+  ]
+}

@@ -1,0 +1,340 @@
+﻿{
+  //"SheetName": "Delphi - Note Matrix,TRE ACR - Note Matrix,ACORE Credit IV - Note Matrix",
+  "SheetName": "Delphi,TRE ACR,ACORE Credit IV,ACP II,ACSS,AHIP,Delaware Life,Harel,SILAC,Equitrust,LTV Clean,Fee",
+  "LandingTableName": "DW.L_NoteMatrixBI",
+  "HeaderPosition": 5,
+  "Check2BlankRow": false,
+  "MappingColumns": [
+    {
+      "SheetColumnName": "Deal ID",
+      "LandingColumnName": "DealID"
+    },
+    {
+      "SheetColumnName": "Deal Group ID",
+      "LandingColumnName": "DealGroupID"
+    },
+    {
+      "SheetColumnName": "Note ID",
+      "LandingColumnName": "NoteID"
+    },
+    {
+      "SheetColumnName": "Pri.",
+      "LandingColumnName": "Pri"
+    },
+    {
+      "SheetColumnName": "Deal Name",
+      "LandingColumnName": "DealName"
+
+    },
+    {
+      "SheetColumnName": "Note Name",
+      "LandingColumnName": "NoteName"
+    },
+    {
+      "SheetColumnName": "Loan Status",
+      "LandingColumnName": "LoanStatus"
+    },
+    {
+      "SheetColumnName": "Client",
+      "LandingColumnName": "Client"
+    },
+    {
+      "SheetColumnName": "Fund",
+      "LandingColumnName": "Fund"
+    },
+    {
+      "SheetColumnName": "Asset Manager",
+      "LandingColumnName": "AssetManager"
+    },
+    {
+      "SheetColumnName": "Banker",
+      "LandingColumnName": "Banker"
+
+    },
+    {
+      "SheetColumnName": "Credit",
+      "LandingColumnName": "Credit"
+
+    },
+    {
+      "SheetColumnName": "Pool",
+      "LandingColumnName": "Pool"
+
+    },
+    {
+      "SheetColumnName": "Financing Source",
+      "LandingColumnName": "FinancingSource"
+    },
+    {
+
+      "SheetColumnName": "Debt Type",
+      "LandingColumnName": "DebtType"
+
+    },
+    {
+      "SheetColumnName": "Cap Stack",
+      "LandingColumnName": "CapStack"
+    },
+    {
+      "SheetColumnName": "Billing Note",
+      "LandingColumnName": "BillingNote"
+    },
+    {
+      "SheetColumnName": "Commitment",
+      "LandingColumnName": "Commitment"
+    },
+    {
+      "SheetColumnName": "Spread",
+      "LandingColumnName": "Spread"
+    },
+    {
+      "SheetColumnName": "Index for Stub",
+      "LandingColumnName": "IndexforStub"
+    },
+    {
+      "SheetColumnName": "Floor",
+      "LandingColumnName": "Floor"
+    },
+    {
+      "SheetColumnName": "All-In Rate",
+      "LandingColumnName": "AllInRate"
+    },
+    {
+      "SheetColumnName": "Type",
+      "LandingColumnName": "Type"
+    },
+    {
+      "SheetColumnName": "Initial Funding",
+      "LandingColumnName": "InitialFunding"
+    },
+    {
+      "SheetColumnName": "Initial Maturity",
+      "LandingColumnName": "InitialMaturity"
+    },
+    {
+      "SheetColumnName": "Extended Maturity 1",
+      "LandingColumnName": "ExtendedMaturity1"
+    },
+    {
+      "SheetColumnName": "Extended Maturity 2",
+      "LandingColumnName": "ExtendedMaturity2"
+    },
+    {
+      "SheetColumnName": "Extended Maturity 3",
+      "LandingColumnName": "ExtendedMaturity3"
+    },
+    {
+      "SheetColumnName": "Extended Maturity 4",
+      "LandingColumnName": "ExtendedMaturity4"
+    },
+    {
+      "SheetColumnName": "Fully Extended Maturity",
+      "LandingColumnName": "FullyExtendedMaturity"
+    },
+    {
+      "SheetColumnName": "Current Maturity(Date)",
+      "LandingColumnName": "CurrentMaturityDate"
+    },
+    {
+      "SheetColumnName": "Current Maturity",
+      "LandingColumnName": "CurrentMaturity"
+    },
+    {
+      "SheetColumnName": "Paid Off/ Sold",
+      "LandingColumnName": "PaidOffSold"
+    },
+    {
+      "SheetColumnName": "A-Note Sale/ Fee start",
+      "LandingColumnName": "FeesStart"
+    },
+    {
+      "SheetColumnName": "RSLIC",
+      "LandingColumnName": "RSLIC"
+    },
+    {
+      "SheetColumnName": "SNCC",
+      "LandingColumnName": "SNCC"
+    },
+    {
+      "SheetColumnName": "PIIC",
+      "LandingColumnName": "PIIC"
+    },
+    {
+      "SheetColumnName": "TMR ",
+      "LandingColumnName": "TMR"
+    },
+    {
+      "SheetColumnName": "HCC",
+      "LandingColumnName": "HCC"
+    },
+    {
+      "SheetColumnName": "USSIC",
+      "LandingColumnName": "USSIC"
+    },
+    {
+      "SheetColumnName": "TMNF",
+      "LandingColumnName": "TMNF"
+    },
+    {
+      "SheetColumnName": "HAIH",
+      "LandingColumnName": "HAIH"
+    },
+    {
+      "SheetColumnName": "Check ",
+      "LandingColumnName": "Check"
+    },
+    {
+      "SheetColumnName": "CAMRA IDs",
+      "LandingColumnName": "CAMRA"
+    },
+    {
+      "SheetColumnName": "Servicer",
+      "LandingColumnName": "Servicer"
+    },
+    {
+      "SheetColumnName": "Servicer ID",
+      "LandingColumnName": "ServicerID"
+    },
+    {
+      "SheetColumnName": "Prem./ (Disc.)",
+      "LandingColumnName": "PremDisc"
+    },
+    {
+      "SheetColumnName": "Origination Fee",
+      "LandingColumnName": "OriginationFee"
+    },
+    {
+      "SheetColumnName": "Future Fundings",
+      "LandingColumnName": "FutureFundingsatParor99"
+    },
+    {
+      "SheetColumnName": "Paydown/ Payoff Convention",
+      "LandingColumnName": "PaydownPayoffConvention"
+    },
+    {
+      "SheetColumnName": "Note Classification",
+      "LandingColumnName": "NoteClassification"
+    },
+    {
+      "SheetColumnName": "Exit Fee",
+      "LandingColumnName": "ExitFee"
+    },
+    {
+      "SheetColumnName": "Whole Loan Spread",
+      "LandingColumnName": "WholeLoanSpread"
+    },
+    {
+      "SheetColumnName": "Extension Fee 1",
+      "LandingColumnName": "ExtensionFee1"
+    },
+    {
+      "SheetColumnName": "Extension Fee 2",
+      "LandingColumnName": "ExtensionFee2"
+    },
+    {
+      "SheetColumnName": "Extension Fee 3",
+      "LandingColumnName": "ExtensionFee3"
+    },
+    {
+      "SheetColumnName": "Extension Fee 4",
+      "LandingColumnName": "ExtensionFee4"
+    },
+    {
+      "SheetColumnName": "Senior Loan Spread",
+      "LandingColumnName": "SeniorLoanSpread"
+    },
+    {
+      "SheetColumnName": "Sub Loan Spread",
+      "LandingColumnName": "SubLoanSpread"
+    },
+    {
+      "SheetColumnName": "Payment Date",
+      "LandingColumnName": "PaymentDate"
+    },
+    {
+      "SheetColumnName": "Product Type",
+      "LandingColumnName": "ProductType"
+    },
+    {
+      "SheetColumnName": "MSA",
+      "LandingColumnName": "MSA"
+    },
+    {
+      "SheetColumnName": "State",
+      "LandingColumnName": "State"
+    },
+    {
+      "SheetColumnName": "Deal Type",
+      "LandingColumnName": "DealType"
+    },
+    {
+      "SheetColumnName": "Current Entity",
+      "LandingColumnName": "CurrentEntity"
+    },
+    {
+      "SheetColumnName": "Inquiry Year",
+      "LandingColumnName": "InquiryYear"
+    },
+    {
+      "SheetColumnName": "Location",
+      "LandingColumnName": "Location"
+    },
+    {
+      "SheetColumnName": "Underwritten Return",
+      "LandingColumnName": "UnderwrittenReturn"
+    },
+    {
+      "SheetColumnName": "ACORE Orig Fee",
+      "LandingColumnName": "AcoreOrig"
+    },
+    {
+      "SheetColumnName": "Deal Group ID (Default as Deal ID)",
+      "LandingColumnName": "DealGroupID1"
+    },
+    {
+      "SheetColumnName": "ACORE ID",
+      "LandingColumnName": "ACOREID"
+    },
+    {
+      "SheetColumnName": "Loan Status*",
+      "LandingColumnName": "LoanStatus1"
+    },
+    {
+      "SheetColumnName": "Asset Manager*",
+      "LandingColumnName": "AssetManager1"
+    },
+    {
+      "SheetColumnName": "Banker*",
+      "LandingColumnName": "Banker1"
+    },
+    {
+      "SheetColumnName": "Credit*",
+      "LandingColumnName": "Credit1"
+    },
+    {
+      "SheetColumnName": "Financing Source*",
+      "LandingColumnName": "FinancingSource1"
+    },
+    {
+      "SheetColumnName": "Client ID",
+      "LandingColumnName": "CAMRA1"
+    },
+    {
+      "SheetColumnName": "Prem./(Disc.)",
+      "LandingColumnName": "PremDisc1"
+    },
+    {
+      "SheetColumnName": " ",
+      "LandingColumnName": "Other1"
+    },
+    {
+      "SheetColumnName": "SheetName",
+      "LandingColumnName": "SheetName"
+    },
+    {
+      "SheetColumnName": "Exit Fee 1 % ",
+      "LandingColumnName": "ExitFee1"
+    }
+
+  ]
+}
