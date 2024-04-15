@@ -61,8 +61,9 @@ stages:
     - script: |
         git config --global user.email "niharikas.hvantage@gmail.com"
         git config --global user.name "Niharika-Hvantage"
+        git remote add https://github.com/Niharika-Hvantage/ServiceMVC.git
         git checkout QA
         git pull origin QA
-        git merge origin/master --no-ff --no-edit
+        git merge origin/master 
         git push origin QA
       displayName: 'Merge master into QA branch'
