@@ -64,6 +64,9 @@ stages:
         git remote add https://github.com/Niharika-Hvantage/ServiceMVC.git
         git checkout QA
         git pull origin QA
-        git merge origin/master 
-        git push origin QA
+        git rebase origin/master
+        
+        # git merge origin/master 
+        # git push origin QA
+        git push origin QA --force
       displayName: 'Merge master into QA branch'
