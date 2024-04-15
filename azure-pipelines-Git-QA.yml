@@ -57,9 +57,12 @@ stages:
   - job: Merge
     displayName: 'Merge to QA Branch'
     steps:
+    - checkout: self
     - script: |
+        git config --global user.email "niharikas.hvantage@gmail.com"
+        git config --global user.name "Niharika-Hvantage"
         git checkout QA
         git pull origin QA
-        git merge origin/master 
+        git merge origin/master --no-ff --no-edit
         git push origin QA
       displayName: 'Merge master into QA branch'
