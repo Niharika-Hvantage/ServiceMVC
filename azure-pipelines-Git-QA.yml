@@ -1,0 +1,65 @@
+# ASP.NET Core
+# Build and test ASP.NET Core projects targeting .NET Core.
+# Add steps that run tests, create a NuGet package, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
+trigger:
+- master
+
+pool:
+  name: Default
+
+variables:
+  RestoreBuildProjects: '**/*.csproj'
+  BuildConfiguration: 'Release'
+
+stages:
+- stage: DeployToQA
+  jobs:
+  - job: Deploy
+    displayName: 'Deploy to QA'
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: Restore
+      inputs:
+        command: restore
+        projects: '$(RestoreBuildProjects)'
+    - task: DotNetCoreCLI@2
+      displayName: Build
+      inputs:
+        command: build
+        projects: '$(RestoreBuildProjects)'
+        arguments: '--configuration $(BuildConfiguration)'
+    - task: DotNetCoreCLI@2
+      displayName: Publish
+      inputs:
+        command: publish
+        publishWebProjects: True
+        arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)'
+        zipAfterPublish: True
+      
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact'
+      inputs:
+       PathtoPublish: '$(build.artifactstagingdirectory)'
+    - task: AzureRmWebAppDeployment@4
+      displayName: 'Azure App Service Deploy: QA'
+      inputs:
+        ConnectionType: 'AzureRM'
+        azureSubscription: 'Azure for Students (69f5967d-5e01-4b72-bb71-842aeddf0cc0)'
+        appType: 'webApp'
+        WebAppName: 'QA-stage'
+        package: '$(build.artifactstagingdirectory)/**/*.zip'
+        ResourceGroupName: 'Niharika-resource-gp'
+
+- stage: PullRequestToQABranch
+  jobs:
+  - job: Merge
+    displayName: 'Merge to QA Branch'
+    steps:
+    - script: |
+        git checkout QA
+        git pull origin QA
+        git merge origin/master --no-edit
+        git push origin QA
+      displayName: 'Merge master into QA branch'
