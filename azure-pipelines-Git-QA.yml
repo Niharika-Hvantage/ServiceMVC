@@ -60,6 +60,7 @@ stages:
     - script: |
         git checkout QA
         git pull origin QA
+        git diff master..QA
         git merge origin/master 
         git push origin QA
       displayName: 'Merge master into QA branch'
