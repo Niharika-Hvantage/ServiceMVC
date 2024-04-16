@@ -43,8 +43,8 @@ stages:
       inputs:
        PathtoPublish: '$(build.artifactstagingdirectory)'
        
-    - task: Bash@3
-      displayName: 'Bash Script'
+    - task: PowerShell@2
+      displayName: 'PowerShell Script'
       inputs:
        targetType: 'inline'
        script: |
