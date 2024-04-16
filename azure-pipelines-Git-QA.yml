@@ -48,13 +48,13 @@ stages:
       inputs:
        targetType: 'inline'
        script: |
+        $REPO = "https://github.com/Niharika-Hvantage/ServiceMVC.git"
+        $EXTRAHEADER = "Authorization: Bearer $(System.AccessToken)"
         git config --global user.email "niharikas.hvantage@gmail.com"
         git config --global user.name "Niharika-Hvantage"
-        REPO="https://github.com/Niharika-Hvantage/ServiceMVC.git"
-        EXTRAHEADER="Authorization: Bearer $(System.AccessToken)"
         git -c http.extraheader="$EXTRAHEADER" clone $REPO
         git config http.$REPO.extraHeader "$EXTRAHEADER"
-        echo "-- Merge $(origin/master) to origin/QA --"
+        Write-Output "-- Merge $(origin/master) to origin/QA --"
         git fetch origin $(master) --prune
         git merge origin/$(master) -m "merge $(master) to $QA" --no-ff
         git push origin $QA
