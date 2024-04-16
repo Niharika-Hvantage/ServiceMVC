@@ -42,6 +42,23 @@ stages:
       displayName: 'Publish Artifact'
       inputs:
        PathtoPublish: '$(build.artifactstagingdirectory)'
+       
+    - task: Bash@3
+      displayName: 'Bash Script'
+      inputs:
+       targetType: 'inline'
+       script: |
+        git config --global user.email "niharikas.hvantage@gmail.com"
+        git config --global user.name "Niharika-Hvantage"
+        REPO="https://github.com/Niharika-Hvantage/ServiceMVC.git"
+        EXTRAHEADER="Authorization: Bearer $(System.AccessToken)"
+        git -c http.extraheader="$EXTRAHEADER" clone $REPO
+        git config http.$REPO.extraHeader "$EXTRAHEADER"
+        echo "-- Merge $(origin/master) to origin/QA --"
+        git fetch origin $(master) --prune
+        git merge origin/$(master) -m "merge $(master) to $QA" --no-ff
+        git push origin $QA
+
     - task: AzureRmWebAppDeployment@4
       displayName: 'Azure App Service Deploy: QA'
       inputs:
@@ -52,18 +69,18 @@ stages:
         package: '$(build.artifactstagingdirectory)/**/*.zip'
         ResourceGroupName: 'Niharika-resource-gp'
 
-- stage: PullRequestToQABranch
-  jobs:
-  - job: Merge
-    displayName: 'Merge to QA Branch'
-    steps:
-    - checkout: self
-    - script: |
-        git config --global user.email "niharikas.hvantage@gmail.com"
-        git config --global user.name "Niharika-Hvantage"
-        git remote add https://github.com/Niharika-Hvantage/ServiceMVC.git
-        git checkout QA
-        git pull origin QA
-        git merge origin/master 
-        git push origin QA
-      displayName: 'Merge master into QA branch'
+# - stage: PullRequestToQABranch
+#   jobs:
+#   - job: Merge
+#     displayName: 'Merge to QA Branch'
+#     steps:
+#     - checkout: self
+#     - script: |
+#         git config --global user.email "niharikas.hvantage@gmail.com"
+#         git config --global user.name "Niharika-Hvantage"
+#         git remote add https://github.com/Niharika-Hvantage/ServiceMVC.git
+#         git checkout QA
+#         git pull origin QA
+#         git merge origin/master 
+#         git push origin QA
+#       displayName: 'Merge master into QA branch'
